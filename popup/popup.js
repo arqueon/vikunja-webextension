@@ -51,6 +51,9 @@
   const goSettingsBtn = document.getElementById('go-settings');
   const grantAccessBtn = document.getElementById('grant-access');
 
+  const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
+  searchInput.placeholder = `${t('searchPlaceholder', 'Search tasks…')} (${isMac ? '⌘F' : 'Ctrl+F'})`;
+
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   let baseUrl = '';
@@ -968,6 +971,22 @@
     document.addEventListener('click', (e) => {
       if (!sortBtn.contains(e.target) && !sortMenu.contains(e.target)) {
         closeSortMenu();
+      }
+    });
+    document.addEventListener('keydown', (e) => {
+      if (list.hidden) return;
+      const mod = isMac ? e.metaKey : e.ctrlKey;
+      if (!mod) return;
+      const key = e.key.toLowerCase();
+      if (key === 'n') {
+        e.preventDefault();
+        quickTitle.focus();
+      } else if (key === 'f') {
+        e.preventDefault();
+        searchInput.focus();
+        if (typeof searchInput.select === 'function') {
+          searchInput.select();
+        }
       }
     });
   }

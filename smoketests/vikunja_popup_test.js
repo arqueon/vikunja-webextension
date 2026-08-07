@@ -32,7 +32,9 @@ function fakeElement(id) {
     querySelector() {
       return fakeElement(id + ':query');
     },
-    focus() {},
+    focus() {
+      global._lastFocus = this.id;
+    },
   };
   Object.defineProperty(el, 'textContent', {
     get() {
@@ -83,6 +85,8 @@ const ids = {};
 function getById(id) {
   return (ids[id] = ids[id] || fakeElement(id));
 }
+
+const docListeners = {};
 
 const storage = new Map();
 const calls = { listTasks: [], createTask: [], completeTask: [], listProjectViews: [], hostChecks: [], hostRequests: [], assigneeTask: [] };
@@ -220,6 +224,9 @@ global.document = {
   createElementNS: (ns, tag) => fakeElement(`<svg:${tag}>`),
   createTextNode: (text) => ({ textContent: String(text) }),
   querySelectorAll: () => [],
+  addEventListener(type, fn) {
+    (docListeners[type] = docListeners[type] || []).push(fn);
+  },
 };
 
 global.window.VikunjaLib = VikunjaLib;
@@ -566,6 +573,48 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   await new Promise((r) => { setTimeout(r, 20); });
   const lastFetch5 = calls.listTasks[calls.listTasks.length - 1];
   assert(lastFetch5.sortBy === 'created' && lastFetch5.orderBy === 'desc', 'falls back to created desc without a view, got ' + JSON.stringify(lastFetch5));
+
+  // --- Keyboard: Ctrl/Cmd+F focuses search, Ctrl/Cmd+N the quick-add bar ---
+  const setPlatform = (p) => Object.defineProperty(navigator, 'platform', { value: p, configurable: true });
+  const dispatchKey = (init) => {
+    const ev = Object.assign({ preventDefault() { ev.prevented = true; }, ctrlKey: false, metaKey: false, key: '' }, init);
+    const listeners = docListeners.keydown || [];
+    listeners[listeners.length - 1](ev);
+    return ev;
+  };
+
+  setPlatform('Linux x86_64');
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+
+  global._lastFocus = null;
+  let keyEv = dispatchKey({ ctrlKey: true, key: 'f' });
+  assert(keyEv.prevented === true, 'Ctrl+F preventDefaults');
+  assert(global._lastFocus === 'search', 'Ctrl+F focuses search, got ' + global._lastFocus);
+
+  global._lastFocus = null;
+  keyEv = dispatchKey({ ctrlKey: true, key: 'n' });
+  assert(keyEv.prevented === true, 'Ctrl+N preventDefaults');
+  assert(global._lastFocus === 'quick-title', 'Ctrl+N focuses quick add, got ' + global._lastFocus);
+
+  keyEv = dispatchKey({ ctrlKey: true, key: 'a' });
+  assert(keyEv.prevented === undefined, 'unbound Ctrl+key left alone');
+  keyEv = dispatchKey({ key: 'f' });
+  assert(keyEv.prevented === undefined, 'bare F left alone');
+
+  setPlatform('MacIntel');
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+
+  global._lastFocus = null;
+  keyEv = dispatchKey({ metaKey: true, key: 'f' });
+  assert(keyEv.prevented === true && global._lastFocus === 'search', 'Cmd+F focuses search on mac, got ' + global._lastFocus);
+  global._lastFocus = null;
+  keyEv = dispatchKey({ metaKey: true, key: 'n' });
+  assert(keyEv.prevented === true && global._lastFocus === 'quick-title', 'Cmd+N focuses quick add on mac, got ' + global._lastFocus);
+  global._lastFocus = null;
+  keyEv = dispatchKey({ ctrlKey: true, key: 'f' });
+  assert(keyEv.prevented === undefined && global._lastFocus !== 'search', 'plain Ctrl+F ignored on mac, got ' + global._lastFocus);
 
   if (errors.length) {
     console.log('FAIL');

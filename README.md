@@ -40,7 +40,9 @@ browser.
   "remember last sort choice" enabled, the popup stores your last pick in the
   browser's local storage and it takes precedence.
 - **Keyboard shortcuts** — `Alt+Shift+K` opens the popup, `Alt+Shift+V` adds
-  the current website as a task.
+  the current website as a task. Inside the popup, `Ctrl+F` / `⌘F` focuses the
+  search bar and `Ctrl+N` / `⌘N` the quick-add insertion bar (on macOS the
+  `⌘` variants replace `Ctrl`).
 
 ## Language
 
