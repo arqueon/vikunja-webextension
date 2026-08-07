@@ -54,7 +54,7 @@
     if (!api.tabs || !api.scripting || patterns.length === 0) {
       return;
     }
-    let tabs = [];
+    let tabs;
     try {
       tabs = await api.tabs.query({ url: patterns });
     } catch (e) {

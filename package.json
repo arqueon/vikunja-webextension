@@ -9,6 +9,7 @@
     "test": "for f in smoketests/*.js; do node \"$f\" || exit 1; done"
   },
   "devDependencies": {
-    "eslint": "^10.3.0"
+    "eslint": "^10.3.0",
+    "eslint-plugin-no-unsanitized": "^4.1.5"
   }
 }
