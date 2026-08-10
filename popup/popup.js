@@ -12,6 +12,7 @@
     listProjectViews,
     createTask,
     completeTask,
+    closePopup,
     getQuickAddMagicMode,
     searchProjectUsers,
     listLabels,
@@ -476,6 +477,7 @@
       title.title = task.title || t('untitledLabel', 'Untitled');
       title.addEventListener('click', () => {
         window.open(`${baseUrl}/tasks/${task.id}`, '_blank');
+        closePopup();
       });
       top.appendChild(title);
 
@@ -1015,8 +1017,14 @@
     showView(list);
   }
 
-  openSettingsBtn.addEventListener('click', () => uiOpenOptions(api));
-  goSettingsBtn.addEventListener('click', () => uiOpenOptions(api));
+  openSettingsBtn.addEventListener('click', () => {
+    uiOpenOptions(api);
+    closePopup();
+  });
+  goSettingsBtn.addEventListener('click', () => {
+    uiOpenOptions(api);
+    closePopup();
+  });
   grantAccessBtn.addEventListener('click', async () => {
     grantAccessBtn.disabled = true;
     try {
@@ -1034,6 +1042,7 @@
   function openVikunja() {
     if (baseUrl) {
       window.open(baseUrl, '_blank');
+      closePopup();
     }
   }
   logo.addEventListener('click', openVikunja);
