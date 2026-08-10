@@ -5,9 +5,6 @@ search your tasks, add new ones with the full **Quick Add Magic** syntax, and
 capture the current page or selected text as a task — without leaving your
 browser.
 
-> **Status:** currently only tested on **Firefox**. The manifest includes Chrome
-> (minimum version 121) settings, but Firefox is the actively tested browser.
-
 ## Features
 
 - **Toolbar popup** — a searchable task list with complete/reopen checkboxes,
@@ -126,5 +123,13 @@ The pack script stages only the shipped files (no `scripts/`, `smoketests/`,
 docs or previous build output) and uses the canonical Firefox `manifest.json`.
 `scripts/pack-firefox.sh --manifest-only` prints the manifest instead.
 
-Chrome packing is not implemented yet: `npm run pack:chrome` prints a notice
-and exits non-zero.
+Build a Chrome `.zip` into `dist/vikunja-chrome-<version>.zip`:
+
+```sh
+npm run pack:chrome
+```
+
+The Chrome pack reuses the same staging and drops the Firefox-only
+`background.scripts` and `browser_specific_settings` keys from the manifest
+(Chrome uses `background.service_worker`).
+`scripts/pack-chrome.sh --manifest-only` prints the Chrome manifest instead.

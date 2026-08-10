@@ -9,6 +9,15 @@ body {
   padding: 1.25rem;
 }
 
+/* Chrome sizes its embedded options dialog from the html/body width (no
+   maximum), so widen the modal; Firefox pins the embedded page to 632px and
+   does not need this. */
+html.chrome,
+body.chrome {
+  width: 48rem;
+  min-width: 48rem;
+}
+
 h2:first-of-type {
   border-top: none;
   margin-top: 0;

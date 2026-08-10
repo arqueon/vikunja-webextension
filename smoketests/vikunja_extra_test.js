@@ -47,6 +47,7 @@ const projects = [
   { id: 2, title: 'Home' },
 ];
 const calls = { createTask: [], request: [], syncSet: [], hostRequest: [] };
+let windowCloseCalls = 0;
 
 const VikunjaLib = {
   api: {
@@ -84,7 +85,11 @@ const VikunjaLib = {
   elementInstancePatterns: (instances) => (Array.isArray(instances) ? instances.map((i) => new URL(i.url).origin + '/*') : []),
 };
 
-global.window = { open() {}, close() {}, VikunjaLib };
+global.window = { open() {}, close() { windowCloseCalls += 1; }, VikunjaLib };
+Object.defineProperty(global, 'navigator', {
+  value: { userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/148.0.0.0 Safari/537.36' },
+  configurable: true,
+});
 installI18nMock();
 eval(fs.readFileSync(path.join(__dirname, '..', 'lib/i18n.js'), 'utf8'));
 global.window.I18n = globalThis.I18n;
@@ -94,6 +99,8 @@ global.document = {
   createElementNS: (ns, tag) => fakeElement(`<svg:${tag}>`),
   createTextNode: (text) => ({ textContent: String(text) }),
   querySelectorAll: () => [],
+  documentElement: fakeElement('html'),
+  body: fakeElement('body'),
 };
 global.location = { search: '?title=Found%20bug&description=On%20page&url=https%3A%2F%2Fexample.com' };
 global.URLSearchParams = URLSearchParams;
@@ -131,10 +138,13 @@ const root = path.join(__dirname, '..');
   assert(calls.syncSet[0].elementTag === 'from-element', 'options: element-tag preserved');
   assert(calls.hostRequest.length === 1, 'options: save requests host permissions');
   assert(calls.hostRequest[0].length === 1 && calls.hostRequest[0][0] === 'https://try.vikunja.io/*', 'options: save requests all host patterns');
+  assert(document.body.className.includes('chrome'), 'options: chrome context marks the page');
+  assert(windowCloseCalls === 1, 'options: save closes the Chrome options dialog');
 
   await ids['test'].listeners['click'][0]();
   assert(calls.request.length === 1 && calls.request[0].endpoint === 'user', 'options: test hits /user');
   assert(ids['status'].hidden === false && ids['status'].className.includes('ok'), 'options: test ok status');
+  assert(windowCloseCalls === 1, 'options: test connection keeps the dialog open');
 
   if (errors.length) {
     console.log('FAIL');

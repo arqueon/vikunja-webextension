@@ -3,6 +3,19 @@
 
   window.I18n.applyPage();
 
+  // Chrome sizes its embedded options dialog from the html/body width (no
+  // maximum), so widen the modal and close it after a successful save;
+  // Firefox/Thunderbird pin the embedded page to 632px and never need this.
+  // Detection is UA-based: Chrome 148+ exposes a `browser` namespace (an alias
+  // for `chrome`), so its absence no longer means "not Chrome".
+  const isChrome = /(?:Chrome|Chromium)\//.test(
+    typeof navigator !== 'undefined' && navigator.userAgent ? navigator.userAgent : '',
+  );
+  if (isChrome) {
+    document.documentElement.classList.add('chrome');
+    document.body.classList.add('chrome');
+  }
+
   const { api, normalizeBaseUrl, getConfig, getPrefs, request, listProjects, hostPermissionPatterns, requestHostPermissions, getElementInstances, elementInstancePatterns, hasHostPermissions } = window.VikunjaLib;
   const { fillProjectSelect: uiFillProjectSelect } = window.UiLib;
   const { t } = window.I18n;
@@ -108,7 +121,7 @@
 
   async function save() {
     const config = validate();
-    if (!config) return;
+    if (!config) return false;
     saveBtn.disabled = true;
     try {
       // Ensure we have the permissions
@@ -118,8 +131,10 @@
 
       await api.storage.sync.set(config);
       showStatus(t('settingsSaved', 'Settings saved.'), 'ok');
+      return true;
     } catch (e) {
       showStatus(t('couldNotSaveSettings', 'Could not save settings: $1', [e.message]), 'error');
+      return false;
     } finally {
       saveBtn.disabled = false;
     }
@@ -237,7 +252,13 @@
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
-    save();
+    // Only the explicit Save button/Enter closes the modal; test() calls save()
+    // itself and must keep the dialog open.
+    return save().then((ok) => {
+      if (ok && isChrome) {
+        window.close();
+      }
+    });
   });
 
   testBtn.addEventListener('click', test);

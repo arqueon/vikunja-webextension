@@ -29,7 +29,6 @@ global.chrome = {
   },
   runtime: { getURL: (p) => `moz-extension://abc/${p}` },
   action: { openPopup: async () => { popupOpens += 1; } },
-  windows: { create: (d) => { windowCreates.push(d); return d; } },
 };
 installI18nMock();
 eval(fs.readFileSync(path.join(__dirname, '..', 'lib/i18n.js'), 'utf8'));
@@ -192,15 +191,18 @@ const V = globalThis.VikunjaLib;
   assert.equal(popupOpens, 1, 'openCapture opens the toolbar popup');
   assert.equal(sessionStore['vikunjaCapture'].title, 't', 'openCapture stores the content for the popup');
 
-  // Without action.openPopup (e.g. Chrome) openCapture falls back to a popup
-  // window; the captured content is still handed over via session storage.
-  const windowBefore = windowCreates.length;
+  // openCapture has no window fallback: a missing action.openPopup (ruled out
+  // by the manifest minimum versions) surfaces as a rejection.
+  const realAction = global.chrome.action;
   global.chrome.action = {};
-  await V.openCapture({ title: 'fallback' });
-  assert.equal(windowCreates.length, windowBefore + 1, 'fallback opens a popup window');
-  assert.ok(windowCreates[windowCreates.length - 1].url.includes('popup/popup.html'));
-  assert.equal(sessionStore['vikunjaCapture'].title, 'fallback', 'fallback still hands over the content');
-  global.chrome.action = { openPopup: async () => { popupOpens += 1; } };
+  let captureErr = null;
+  try {
+    await V.openCapture({ title: 'nope' });
+  } catch (e) {
+    captureErr = e;
+  }
+  assert.ok(captureErr, 'openCapture rejects without action.openPopup');
+  global.chrome.action = realAction;
 
   calls.length = 0;
   assert.equal(await V.getQuickAddMagicMode(), 'todoist');

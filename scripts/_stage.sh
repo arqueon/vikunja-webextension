@@ -22,6 +22,7 @@ tar --exclude='./node_modules' \
     --exclude='./*.xpi' \
     --exclude='./eslint.config.js' \
     --exclude='./README.md' \
+    --exclude='./AGENTS.md' \
     --exclude='./package.json' \
     --exclude='./package-lock.json' \
     -cf - . | tar -xf - -C "$STAGE"
