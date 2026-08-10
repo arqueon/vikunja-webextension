@@ -319,6 +319,12 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(ids['task-list'].childNodes[2].classList.contains('task--new'), 'new task row animated in');
   assert(storage.get('lastProjectId') === 1, 'lastProjectId persisted');
 
+  // Error toasts get the toast-error class; success toasts drop it again.
+  globalThis.UiLib.showToast(ids['toast'], 'Boom', { error: true });
+  assert(ids['toast'].classList.contains('toast-error'), 'error toast gets the toast-error class');
+  globalThis.UiLib.showToast(ids['toast'], 'Task added.');
+  assert(!ids['toast'].classList.contains('toast-error'), 'success toast drops the toast-error class');
+
   // Quick Add Magic: +project, !priority, *label (vikunja mode)
   ids['quick-title'].value = '+Home Water plants !3 *focus';
   await getSubmit()({ preventDefault() {} });

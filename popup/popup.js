@@ -651,7 +651,7 @@
     try {
       await refreshTasks();
     } catch (e) {
-      uiShowToast(toastEl, t('couldNotReloadTasks', 'Could not reload tasks: $1', [e.message]));
+      uiShowToast(toastEl, t('couldNotReloadTasks', 'Could not reload tasks: $1', [e.message]), { error: true });
     }
   }
 
@@ -722,7 +722,7 @@
       renderTasks();
     } catch (e) {
       input.checked = !next;
-      uiShowToast(toastEl, t('couldNotUpdateTask', 'Could not update task: $1', [e.message]));
+      uiShowToast(toastEl, t('couldNotUpdateTask', 'Could not update task: $1', [e.message]), { error: true });
     } finally {
       input.disabled = false;
     }
@@ -928,7 +928,7 @@
       const content = buildTaskContent({}, tab || {});
       await openCapture(content);
     } catch (err) {
-      uiShowToast(toastEl, t('couldNotOpenCapture', 'Could not open capture: $1', [err.message]));
+      uiShowToast(toastEl, t('couldNotOpenCapture', 'Could not open capture: $1', [err.message]), { error: true });
     } finally {
       addSiteBtn.disabled = false;
     }
