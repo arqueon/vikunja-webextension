@@ -41,7 +41,9 @@ browser.
 - **Keyboard shortcuts** — `Alt+Shift+K` opens the popup, `Alt+Shift+V` adds
   the current website as a task. Inside the popup, `Ctrl+F` / `⌘F` focuses the
   search bar and `Ctrl+N` / `⌘N` the quick-add insertion bar (on macOS the
-  `⌘` variants replace `Ctrl`).
+  `⌘` variants replace `Ctrl`). In Firefox `Ctrl+N` is reserved for a new
+  browser window, so there the quick-add bar is focused with `Alt+Shift+N`
+  instead.
 
 ## Language
 

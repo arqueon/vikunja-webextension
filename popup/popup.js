@@ -1069,6 +1069,15 @@
     });
     document.addEventListener('keydown', (e) => {
       if (list.hidden) return;
+      // Ctrl+N is a reserved Firefox shortcut (new window) that never reaches
+      // this page, so Firefox falls back to Alt+Shift+N; Chrome keeps Ctrl+N.
+      if (isFirefox() && e.key.toLowerCase() === 'n') {
+        if (e.altKey && e.shiftKey) {
+          e.preventDefault();
+          quickTitle.focus();
+        }
+        return;
+      }
       const mod = isMac ? e.metaKey : e.ctrlKey;
       if (!mod) return;
       const key = e.key.toLowerCase();

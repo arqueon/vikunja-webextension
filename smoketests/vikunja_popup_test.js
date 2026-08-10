@@ -95,6 +95,7 @@ const magicCalls = { searchProjectUsers: [], listLabels: [], createLabel: [], ad
 let quickAddModeMock = 'vikunja';
 let hostPermGranted = true;
 let pendingCaptureMock = null;
+let isFirefoxMock = false;
 const labelFixture = [{ id: 50, title: 'focus', hex_color: 'ff0000' }];
 const userFixture = [{ id: 7, username: 'alice', name: 'Alice', email: 'alice@example.com' }];
 const projects = [
@@ -213,6 +214,7 @@ const VikunjaLib = {
     return Object.assign({}, base, { title, description: url ? `[${title}](${url})` : '', url });
   },
   getActiveTab: () => Promise.resolve({ url: 'https://example.com', title: 'Example' }),
+  isFirefox: () => isFirefoxMock,
   closePopup: () => {
     global._popupCloseCount = (global._popupCloseCount || 0) + 1;
   },
@@ -684,6 +686,24 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   global._lastFocus = null;
   keyEv = dispatchKey({ ctrlKey: true, key: 'f' });
   assert(keyEv.prevented === undefined && global._lastFocus !== 'search', 'plain Ctrl+F ignored on mac, got ' + global._lastFocus);
+
+  // Firefox: Ctrl+N is reserved (new window) and never reaches the popup, so
+  // Alt+Shift+N is the fallback; Ctrl+F keeps working.
+  isFirefoxMock = true;
+  setPlatform('Linux x86_64');
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+
+  global._lastFocus = null;
+  keyEv = dispatchKey({ altKey: true, shiftKey: true, key: 'n' });
+  assert(keyEv.prevented === true && global._lastFocus === 'quick-title', 'Firefox Alt+Shift+N focuses quick add, got ' + global._lastFocus);
+  global._lastFocus = null;
+  keyEv = dispatchKey({ ctrlKey: true, key: 'n' });
+  assert(keyEv.prevented === undefined && global._lastFocus !== 'quick-title', 'Firefox Ctrl+N left alone (reserved shortcut), got prevented=' + keyEv.prevented);
+  global._lastFocus = null;
+  keyEv = dispatchKey({ ctrlKey: true, key: 'f' });
+  assert(keyEv.prevented === true && global._lastFocus === 'search', 'Firefox Ctrl+F still focuses search, got ' + global._lastFocus);
+  isFirefoxMock = false;
 
   if (errors.length) {
     console.log('FAIL');
