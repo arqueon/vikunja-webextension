@@ -5,7 +5,7 @@
 
   // Chrome sizes its embedded options dialog from the html/body width (no
   // maximum), so widen the modal and close it after a successful save;
-  // Firefox/Thunderbird pin the embedded page to 632px and never need this.
+  // Firefox pins the embedded page to 632px and never needs this.
   // Detection is UA-based: Chrome 148+ exposes a `browser` namespace (an alias
   // for `chrome`), so its absence no longer means "not Chrome".
   const isChrome = /(?:Chrome|Chromium)\//.test(

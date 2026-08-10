@@ -13,6 +13,7 @@
     createTask,
     completeTask,
     closePopup,
+    isFirefox,
     getQuickAddMagicMode,
     searchProjectUsers,
     listLabels,

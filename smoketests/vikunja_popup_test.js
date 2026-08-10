@@ -408,18 +408,18 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   const logoClick = ids['logo'].listeners['click'];
   logoClick[logoClick.length - 1]();
   assert(opened.length === 1 && opened[0] === 'https://try.vikunja.io', 'logo click opens baseUrl');
-  assert(global._popupCloseCount === 1, 'logo click closes the popup in Firefox/Thunderbird');
+  assert(global._popupCloseCount === 1, 'logo click closes the popup in Firefox');
 
   // Task title opens the task page and closes the popup
   const taskTitle = ids['task-list'].childNodes[0].childNodes[1].childNodes[0].childNodes[0];
   taskTitle.listeners['click'][0]();
   assert(opened.length === 2 && opened[1] === 'https://try.vikunja.io/tasks/101', 'task click opens the task URL, got ' + JSON.stringify(opened));
-  assert(global._popupCloseCount === 2, 'task click closes the popup in Firefox/Thunderbird');
+  assert(global._popupCloseCount === 2, 'task click closes the popup in Firefox');
   global.window.open = origOpen;
 
   // Settings button opens the options page and closes the popup
   ids['open-settings'].listeners['click'][0]();
-  assert(global._popupCloseCount === 3, 'settings click closes the popup in Firefox/Thunderbird');
+  assert(global._popupCloseCount === 3, 'settings click closes the popup in Firefox');
 
   ids['search'].value = 'milk';
   const onSearch = ids['search'].listeners['input'][0];
