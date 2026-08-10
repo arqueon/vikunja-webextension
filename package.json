@@ -6,7 +6,9 @@
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "lint": "eslint .",
-    "test": "for f in smoketests/*.js; do node \"$f\" || exit 1; done"
+    "test": "for f in smoketests/*.js; do node \"$f\" || exit 1; done",
+    "pack:chrome": "scripts/pack-chrome.sh",
+    "pack:firefox": "scripts/pack-firefox.sh"
   },
   "devDependencies": {
     "eslint": "^10.3.0",

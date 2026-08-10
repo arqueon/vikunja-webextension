@@ -112,8 +112,17 @@ parses task text identically to the web app.
 Then open the options page, enter your Vikunja URL and an API token with the
 permissions listed on the page, and you are ready to go.
 
-## Packaging as an `.xpi`
+## Packaging
+
+Build a Firefox `.xpi` into `dist/vikunja-firefox-<version>.xpi`:
 
 ```sh
-zip -r vikunja.xpi manifest.json background capture content icons lib options popup capture styles _locales -x 'icons/icon.svg'
+npm run pack:firefox
 ```
+
+The pack script stages only the shipped files (no `scripts/`, `smoketests/`,
+docs or previous build output) and uses the canonical Firefox `manifest.json`.
+`scripts/pack-firefox.sh --manifest-only` prints the manifest instead.
+
+Chrome packing is not implemented yet: `npm run pack:chrome` prints a notice
+and exits non-zero.
