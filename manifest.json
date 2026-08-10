@@ -50,14 +50,14 @@
   },
   "permissions": ["storage", "activeTab", "contextMenus", "scripting"],
   "optional_host_permissions": ["http://*/*", "https://*/*"],
-  "minimum_chrome_version": "121",
+  "minimum_chrome_version": "127",
   "browser_specific_settings": {
     "gecko": {
       "id": "vikunja@hess.ooo",
       "data_collection_permissions": {
         "required": ["none"]
       },
-      "strict_min_version": "142.0"
+      "strict_min_version": "151.0"
     }
   }
 }

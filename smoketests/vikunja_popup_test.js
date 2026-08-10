@@ -94,6 +94,7 @@ const createdTasks = [];
 const magicCalls = { searchProjectUsers: [], listLabels: [], createLabel: [], addLabelToTask: [] };
 let quickAddModeMock = 'vikunja';
 let hostPermGranted = true;
+let pendingCaptureMock = null;
 const labelFixture = [{ id: 50, title: 'focus', hex_color: 'ff0000' }];
 const userFixture = [{ id: 7, username: 'alice', name: 'Alice', email: 'alice@example.com' }];
 const projects = [
@@ -206,11 +207,16 @@ const VikunjaLib = {
     if (isBeforeOrAt(21)) return 21;
     return 9;
   },
-  buildTaskContent: (base, tab) => Object.assign({}, base, { tabUrl: tab && tab.url, tabTitle: tab && tab.title }),
+  buildTaskContent: (base, tab) => {
+    const title = (tab && tab.title) || '';
+    const url = (tab && tab.url) || '';
+    return Object.assign({}, base, { title, description: url ? `[${title}](${url})` : '', url });
+  },
   getActiveTab: () => Promise.resolve({ url: 'https://example.com', title: 'Example' }),
-  openCapture: (content) => {
-    calls.openCapture = content;
-    return Promise.resolve();
+  loadCaptureContent: async () => {
+    const content = pendingCaptureMock;
+    pendingCaptureMock = null;
+    return content;
   },
 };
 
@@ -411,9 +417,52 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(ids['task-list'].childNodes.length === 0 && ids['task-empty'].hidden === false, 'search empty state shows');
   assert(ids['task-empty'].textContent === 'No matching tasks.', 'empty state text');
 
+  // --- Inline capture: plus button switches to the capture view ---
+  ids['search'].value = '';
   const addSite = ids['add-site'].listeners['click'][0];
   await addSite();
-  assert(calls.openCapture && calls.openCapture.tabUrl === 'https://example.com', 'openCapture called with tab');
+  assert(ids['capture'].hidden === false, 'plus button shows the capture view');
+  assert(ids['list'].hidden === true, 'list hidden while capturing');
+  assert(ids['capture-title'].value === 'Example', 'capture title prefilled from the tab, got ' + ids['capture-title'].value);
+  assert(ids['capture-description'].value === '[Example](https://example.com)', 'capture description prefilled');
+  assert(ids['capture-project'].value === '1', 'capture project defaults to first project, got ' + ids['capture-project'].value);
+
+  await ids['capture-form'].listeners['submit'][0]({ preventDefault() {} });
+  const lastTask = createdTasks[createdTasks.length - 1];
+  assert(calls.createTask[calls.createTask.length - 1].projectId === '1', 'capture: createTask called');
+  assert(calls.createTask[calls.createTask.length - 1].data.title === 'Example', 'capture: body title');
+  assert(calls.createTask[calls.createTask.length - 1].data.description === '[Example](https://example.com)', 'capture: body description');
+  const captureToastLink = ids['toast'].childNodes.find((c) => c.textContent === String(lastTask.id));
+  assert(captureToastLink && captureToastLink.href === 'https://try.vikunja.io/tasks/' + lastTask.id, 'capture: success toast links to the new task');
+  assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'capture: add returns to the list');
+  assert(ids['task-list'].childNodes[ids['task-list'].childNodes.length - 1].classList.contains('task--new'), 'capture: new task row animated in');
+  assert(storage.get('lastProjectId') === 1, 'capture: lastProjectId persisted');
+
+  // Cancel returns to the list without creating anything.
+  await addSite();
+  const createBefore = calls.createTask.length;
+  ids['capture-cancel'].listeners['click'][0]();
+  assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'cancel returns to the list');
+  assert(calls.createTask.length === createBefore, 'cancel creates nothing');
+
+  // Empty title keeps the user in the capture view with an inline error.
+  await addSite();
+  ids['capture-title'].value = '   ';
+  await ids['capture-form'].listeners['submit'][0]({ preventDefault() {} });
+  assert(ids['capture'].hidden === false, 'empty title stays in capture view');
+  assert(ids['capture-error'].hidden === false && ids['capture-error'].textContent === 'Please enter a task title.', 'empty title shows the inline error');
+  assert(calls.createTask.length === createBefore, 'empty title creates nothing');
+  ids['capture-cancel'].listeners['click'][0]();
+
+  // A pending capture from the context menu/Alt+Shift+V opens the capture view.
+  pendingCaptureMock = { title: 'From window', description: 'Body', url: 'https://x.example' };
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['capture'].hidden === false, 'pending capture opens the capture view');
+  assert(ids['capture-title'].value === 'From window', 'pending capture title prefilled');
+  assert(ids['capture-description'].value === 'Body', 'pending capture description prefilled');
+  ids['capture-cancel'].listeners['click'][0]();
+  assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'capture: window content returns to the list');
 
   VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: 999, dueToday: false, customFilter: '' });
   eval(src);

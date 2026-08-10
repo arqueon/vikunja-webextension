@@ -460,3 +460,66 @@ body {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+#capture {
+  display: flex;
+  flex-direction: column;
+}
+
+.capture-title {
+  font-size: 1rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem;
+}
+
+.capture-form {
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.capture-form textarea {
+  resize: vertical;
+}
+
+.capture-form .field {
+  display: block;
+  margin-top: 0.75rem;
+}
+
+.capture-form .label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.capture-form .row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.capture-form .row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+}
+
+.capture-form .hint {
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.capture-form .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.85rem;
+}
+
+.capture-form input[type="text"],
+.capture-form select,
+.capture-form textarea {
+  width: 100%;
+  font-family: inherit;
+}

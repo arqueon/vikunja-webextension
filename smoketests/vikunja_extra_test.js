@@ -136,31 +136,10 @@ const root = path.join(__dirname, '..');
   assert(calls.request.length === 1 && calls.request[0].endpoint === 'user', 'options: test hits /user');
   assert(ids['status'].hidden === false && ids['status'].className.includes('ok'), 'options: test ok status');
 
-  eval(fs.readFileSync(path.join(root, 'capture/capture.js'), 'utf8'));
-  await new Promise((r) => { setTimeout(r, 20); });
-  assert(ids['capture-form'].hidden === false, 'capture: form shown');
-  assert(ids['title'].value === 'Found bug', 'capture: title from query');
-  assert(ids['description'].value === 'On page', 'capture: description from query');
-  assert(ids['due-today'].checked === true, 'capture: due-today from prefs');
-  assert(ids['project'].options.length === 3, 'capture: project select filled');
-  assert(ids['project'].value === '1', 'capture: default project selected');
-
-  await ids['capture-form'].listeners['submit'][0]({ preventDefault() {} });
-  assert(calls.createTask.length === 1 && calls.createTask[0].projectId === '1', 'capture: createTask called');
-  assert(calls.createTask[0].body.title === 'Found bug', 'capture: body title');
-  assert(calls.createTask[0].body.due_date === '2026-08-02T21:00:00Z', 'capture: due today set');
-  const captureToastLink = ids['toast'].childNodes.find((c) => c.textContent === '1');
-  assert(captureToastLink && captureToastLink.href === 'https://try.vikunja.io/tasks/1', 'capture: success toast links to the new task, got ' + (captureToastLink && captureToastLink.href));
-
-  VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '' });
-  eval(fs.readFileSync(path.join(root, 'capture/capture.js'), 'utf8'));
-  await new Promise((r) => { setTimeout(r, 20); });
-  assert(ids['project'].value === '1', 'capture: no default project -> first project preselected');
-
   if (errors.length) {
     console.log('FAIL');
     errors.forEach((e) => console.log('  - ' + e));
     process.exit(1);
   }
-  console.log('OPTIONS + CAPTURE SMOKE: ALL PASS');
+  console.log('OPTIONS SMOKE: ALL PASS');
 })();

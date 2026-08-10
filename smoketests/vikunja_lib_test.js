@@ -5,6 +5,9 @@ const { installI18nMock } = require('./lib/i18n-mock');
 const src = fs.readFileSync(path.join(__dirname, '..', 'lib/vikunja.js'), 'utf8');
 
 const store = { baseUrl: 'https://vikunja.example', token: 'tk_test', defaultProjectId: '7', dueToday: true, customFilter: 'done = false' };
+const sessionStore = {};
+let popupOpens = 0;
+const keysOf = (keys) => (Array.isArray(keys) ? keys : [keys]);
 global.chrome = {
   storage: {
     sync: {
@@ -14,9 +17,19 @@ global.chrome = {
         return out;
       },
     },
+    session: {
+      get: async (keys) => {
+        const out = {};
+        for (const k of keysOf(keys)) if (k in sessionStore) out[k] = sessionStore[k];
+        return out;
+      },
+      set: async (obj) => { Object.assign(sessionStore, obj); },
+      remove: async (keys) => { for (const k of keysOf(keys)) delete sessionStore[k]; },
+    },
   },
   runtime: { getURL: (p) => `moz-extension://abc/${p}` },
-  windows: { create: (d) => d },
+  action: { openPopup: async () => { popupOpens += 1; } },
+  windows: { create: (d) => { windowCreates.push(d); return d; } },
 };
 installI18nMock();
 eval(fs.readFileSync(path.join(__dirname, '..', 'lib/i18n.js'), 'utf8'));
@@ -167,11 +180,27 @@ const V = globalThis.VikunjaLib;
   assert.equal(due.getMonth(), now.getMonth());
   assert.equal(due.getDate(), now.getDate());
 
-  const url = V.buildCaptureUrl({ title: 'a b', description: '[a](https://x)   ' });
-  assert.ok(url.includes('capture/capture.html?'));
-  assert.ok(url.includes('title=a+b'));
-  const created = await V.openCapture({ title: 't' });
-  assert.ok(created.type === 'popup' && created.focused === true);
+  await V.storeCaptureContent({ title: 'a b', description: '[a](https://x)   ' });
+  assert.equal(sessionStore['vikunjaCapture'].title, 'a b');
+  const loaded = await V.loadCaptureContent();
+  assert.equal(loaded.title, 'a b');
+  assert.equal(sessionStore['vikunjaCapture'], undefined, 'capture consumed after load');
+  assert.equal(await V.loadCaptureContent(), null, 'no pending capture after consume');
+
+  popupOpens = 0;
+  await V.openCapture({ title: 't' });
+  assert.equal(popupOpens, 1, 'openCapture opens the toolbar popup');
+  assert.equal(sessionStore['vikunjaCapture'].title, 't', 'openCapture stores the content for the popup');
+
+  // Without action.openPopup (e.g. Chrome) openCapture falls back to a popup
+  // window; the captured content is still handed over via session storage.
+  const windowBefore = windowCreates.length;
+  global.chrome.action = {};
+  await V.openCapture({ title: 'fallback' });
+  assert.equal(windowCreates.length, windowBefore + 1, 'fallback opens a popup window');
+  assert.ok(windowCreates[windowCreates.length - 1].url.includes('popup/popup.html'));
+  assert.equal(sessionStore['vikunjaCapture'].title, 'fallback', 'fallback still hands over the content');
+  global.chrome.action = { openPopup: async () => { popupOpens += 1; } };
 
   calls.length = 0;
   assert.equal(await V.getQuickAddMagicMode(), 'todoist');

@@ -90,6 +90,36 @@
     <span id="quick-error" class="error" hidden></span>
   </section>
 
+  <section id="capture" class="view" hidden>
+    <h2 class="capture-title" data-i18n="captureTitle">Add task to Vikunja</h2>
+    <form id="capture-form" class="capture-form">
+      <label class="field">
+        <span class="label" data-i18n="fieldTitle">Title</span>
+        <input type="text" id="capture-title" name="title" maxlength="500" autocomplete="off" spellcheck="false" required />
+      </label>
+      <label class="field">
+        <span class="label" data-i18n="fieldProject">Project</span>
+        <select id="capture-project"></select>
+      </label>
+      <label class="field">
+        <span class="label" data-i18n="fieldDueToday">Due today</span>
+        <span class="row">
+          <input type="checkbox" id="capture-due-today" name="dueToday" />
+          <span class="hint" data-i18n="hintDueTodayCapture">Set the task due date to today</span>
+        </span>
+      </label>
+      <label class="field">
+        <span class="label" data-i18n="fieldDescription">Description (optional)</span>
+        <textarea id="capture-description" name="description" rows="4" spellcheck="false"></textarea>
+      </label>
+      <div class="actions">
+        <span id="capture-error" class="error" hidden></span>
+        <button type="button" id="capture-cancel" class="secondary" data-i18n="cancelButton">Cancel</button>
+        <button type="submit" id="capture-add" class="primary" data-i18n="addTaskButton">Add task</button>
+      </div>
+    </form>
+  </section>
+
   <script src="../lib/i18n.js"></script>
   <script src="../lib/vikunja.js"></script>
   <script src="../lib/quick-add.js"></script>

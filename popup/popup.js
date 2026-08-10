@@ -20,7 +20,7 @@
     addAssigneeToTask,
     buildTaskContent,
     getActiveTab,
-    openCapture,
+    loadCaptureContent,
     dueTodayISO,
     hostPermissionPatterns,
     hasHostPermissions,
@@ -28,7 +28,7 @@
   } = window.VikunjaLib;
 
   const { parseTaskText, PrefixMode, PREFIXES, cleanupItemText, analyzeTaskText, removeSpan, repeatTaskFields } = window.QuickAdd;
-  const { openOptions: uiOpenOptions, showToast: uiShowToast } = window.UiLib;
+  const { openOptions: uiOpenOptions, showToast: uiShowToast, fillProjectSelect: uiFillProjectSelect } = window.UiLib;
   const { t } = window.I18n;
 
   const configPrompt = document.getElementById('config-prompt');
@@ -50,6 +50,15 @@
   const openSettingsBtn = document.getElementById('open-settings');
   const goSettingsBtn = document.getElementById('go-settings');
   const grantAccessBtn = document.getElementById('grant-access');
+  const capture = document.getElementById('capture');
+  const captureForm = document.getElementById('capture-form');
+  const captureTitle = document.getElementById('capture-title');
+  const captureProject = document.getElementById('capture-project');
+  const captureDueToday = document.getElementById('capture-due-today');
+  const captureDescription = document.getElementById('capture-description');
+  const captureCancel = document.getElementById('capture-cancel');
+  const captureAdd = document.getElementById('capture-add');
+  const captureError = document.getElementById('capture-error');
 
   const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   searchInput.placeholder = `${t('searchPlaceholder', 'Search tasks…')} (${isMac ? '⌘F' : 'Ctrl+F'})`;
@@ -87,13 +96,15 @@
   const REPEAT_PRESETS = ['every day', 'every 2 days', 'every week', 'every 2 weeks', 'every month'];
 
   function showView(view) {
-    [configPrompt, loading, list].forEach((v) => {
+    [configPrompt, loading, list, capture].forEach((v) => {
       v.hidden = v !== view;
     });
-    // If we are in the config stage, also disable the top bar
-    searchInput.hidden = view === configPrompt;
-    sortBtn.hidden = view === configPrompt;
-    addSiteBtn.hidden = view === configPrompt;
+    // If we are in the config stage, also disable the top bar. In the capture
+    // stage only the settings and logo stay, so the form gets the room.
+    const headerHidden = view === configPrompt || view === capture;
+    searchInput.hidden = headerHidden;
+    sortBtn.hidden = headerHidden;
+    addSiteBtn.hidden = headerHidden;
     openSettingsBtn.hidden = view === configPrompt;
   }
 
@@ -700,7 +711,12 @@
       renderChips();
       autosize();
       showView(list);
-      quickTitle.focus();
+      const pending = await loadCaptureContent().catch(() => null);
+      if (pending) {
+        showCaptureForm(pending);
+      } else {
+        quickTitle.focus();
+      }
     } catch (e) {
       if (!await hasHostPermissions(hostPatterns)) {
         configPrompt.querySelector('.empty').textContent = t('configNoAccess', 'Vikunja is configured, but access to your Vikunja server is not granted yet.');
@@ -921,17 +937,82 @@
     }
   }
 
+  function setCaptureError(message) {
+    captureError.textContent = message || '';
+    captureError.hidden = !message;
+  }
+
+  function showCaptureForm(content) {
+    captureTitle.value = content.title || '';
+    captureDescription.value = content.description || '';
+    uiFillProjectSelect(captureProject, [...projectsById.values()], {
+      selectedId: prefs.defaultProjectId,
+      placeholder: t('selectProject', 'Select a project'),
+      fallbackToFirst: true,
+    });
+    captureDueToday.checked = prefs.dueToday;
+    setCaptureError('');
+    showView(capture);
+    captureTitle.focus();
+    if (typeof captureTitle.select === 'function') {
+      captureTitle.select();
+    }
+  }
+
   async function addCurrentSite() {
     addSiteBtn.disabled = true;
     try {
       const tab = await getActiveTab();
-      const content = buildTaskContent({}, tab || {});
-      await openCapture(content);
+      showCaptureForm(buildTaskContent({}, tab || {}));
     } catch (err) {
       uiShowToast(toastEl, t('couldNotOpenCapture', 'Could not open capture: $1', [err.message]), { error: true });
     } finally {
       addSiteBtn.disabled = false;
     }
+  }
+
+  async function submitCapture(e) {
+    e.preventDefault();
+    const title = captureTitle.value.trim();
+    if (!title) {
+      setCaptureError(t('pleaseEnterTitle', 'Please enter a task title.'));
+      captureTitle.focus();
+      return;
+    }
+    if (!captureProject.value) {
+      setCaptureError(t('pleaseSelectProject', 'Please select a project.'));
+      captureProject.focus();
+      return;
+    }
+    setCaptureError('');
+    captureAdd.disabled = true;
+    try {
+      const body = { title };
+      const description = captureDescription.value.trim();
+      if (description) {
+        body.description = description;
+      }
+      if (captureDueToday.checked) {
+        body.due_date = dueTodayISO();
+      }
+      const created = await createTask(captureProject.value, body);
+      await api.storage.local.set({ lastProjectId: Number(captureProject.value) });
+      showView(list);
+      uiShowToast(toastEl, t('taskAdded', 'Task added.'), {
+        link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` },
+      });
+      await refreshTasks();
+      flashNewTask(created.id);
+      quickTitle.focus();
+    } catch (err) {
+      setCaptureError(err.message);
+    } finally {
+      captureAdd.disabled = false;
+    }
+  }
+
+  function closeCaptureForm() {
+    showView(list);
   }
 
   openSettingsBtn.addEventListener('click', () => uiOpenOptions(api));
@@ -963,6 +1044,9 @@
     }
   });
   addSiteBtn.addEventListener('click', addCurrentSite);
+  captureForm.addEventListener('submit', submitCapture);
+  captureCancel.addEventListener('click', closeCaptureForm);
+  captureTitle.addEventListener('input', () => setCaptureError(''));
   sortBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleSortMenu();

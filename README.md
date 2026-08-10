@@ -25,8 +25,10 @@ browser.
   turn gray when a field is unset and color-coded once it is set. Once you
   start typing, a compact Add button appears below the chips.
 - **Capture current page** — add the current tab, a selection or a link as a
-  task via the right-click menu ("Add to Vikunja…") or the `Alt+Shift+V`
-  shortcut, then refine it in a small capture window before saving.
+  task via the plus button, the right-click menu ("Add to Vikunja…") or the
+  `Alt+Shift+V` shortcut, then refine it right in the popup before saving. The
+  context menu and shortcut open the popup with the captured content already
+  filled in.
 - **Options page** — configure your instance URL, API token (with the required
   permissions documented on the page), default project, "due today" default, a
   custom filter for the task list, the default sort order and whether to
@@ -85,7 +87,7 @@ step). Run them from the repository root:
 ```sh
 node smoketests/vikunja_lib_test.js        # API client (pagination, tasks, labels, users)
 node smoketests/vikunja_popup_test.js      # popup UI + Quick Add Magic flow
-node smoketests/vikunja_extra_test.js      # options + capture windows
+node smoketests/vikunja_extra_test.js      # options window
 node smoketests/vikunja_element_test.js    # background: Element instances, content-script hooks
 node smoketests/vikunja_content_test.js    # Element page: injected buttons + toasts
 node smoketests/quickadd_harness.js        # 879 Quick Add Magic parity assertions
