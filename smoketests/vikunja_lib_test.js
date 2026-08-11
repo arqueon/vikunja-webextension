@@ -154,6 +154,33 @@ const V = globalThis.VikunjaLib;
   assert.ok(calls.every(c => c.url.includes('/api/v2/projects/3/views')), 'expected views path');
   assert.ok(calls[0].url.includes('per_page=50'));
 
+  // listProjects caches per instance in session storage and reuses the list
+  // within the TTL, so repeated popup opens do not hit the network.
+  calls.length = 0;
+  delete sessionStore['vikunjaProjects'];
+  const projectsA = await V.listProjects();
+  assert.equal(projectsA.length, 6, 'first listProjects fetches all pages');
+  assert.ok(calls.length >= 2, 'first listProjects performs the fetches');
+  calls.length = 0;
+  const projectsB = await V.listProjects();
+  assert.equal(calls.length, 0, 'cached listProjects performs no fetch');
+  assert.deepStrictEqual(projectsB, projectsA, 'cached list matches the fetched one');
+  assert.equal(sessionStore['vikunjaProjects'].baseUrl, 'https://vikunja.example', 'cache is tagged with the instance');
+
+  calls.length = 0;
+  await V.listProjects({ forceRefresh: true });
+  assert.ok(calls.length >= 2, 'forceRefresh bypasses the cache');
+
+  calls.length = 0;
+  sessionStore['vikunjaProjects'].ts = Date.now() - 6 * 60 * 1000;
+  await V.listProjects();
+  assert.ok(calls.length >= 2, 'expired cache refetches');
+
+  calls.length = 0;
+  sessionStore['vikunjaProjects'].baseUrl = 'https://other.example';
+  await V.listProjects();
+  assert.ok(calls.length >= 2, 'cache from another instance is ignored');
+
   calls.length = 0;
   const done = await V.completeTask(5, true);
   assert.equal(done.done, true);

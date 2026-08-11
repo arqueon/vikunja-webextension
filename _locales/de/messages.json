@@ -38,6 +38,9 @@
   "sortTasksAriaLabel": {
     "message": "Aufgaben sortieren"
   },
+  "viewAll": {
+    "message": "Alle Aufgaben"
+  },
   "addSiteTitle": {
     "message": "Aktuelle Seite als Aufgabe hinzufügen"
   },

@@ -45,6 +45,7 @@ function getById(id) { return (ids[id] = ids[id] || fakeElement(id)); }
 const projects = [
   { id: 1, title: 'Work' },
   { id: 2, title: 'Home' },
+  { id: -2, title: 'Due soon', is_favorite: true },
 ];
 const calls = { createTask: [], request: [], syncSet: [], hostRequest: [] };
 let windowCloseCalls = 0;
@@ -124,6 +125,7 @@ const root = path.join(__dirname, '..');
   assert(ids['element-react-after-add'].checked === true, 'options: element-react-after-add checked');
   assert(ids['element-tag'].value === 'from-element', 'options: element-tag filled, got ' + ids['element-tag'].value);
   assert(ids['default-project'].options.length === 3, 'options: default-project select filled');
+  assert(ids['default-project'].options.every((o) => !o.value || Number(o.value) > 0), 'options: default-project select excludes pseudo-projects, got ' + JSON.stringify(ids['default-project'].options.map((o) => o.value)));
 
   ids['base-url'].value = 'https://try.vikunja.io/';
   ids['token'].value = 'tk_test';

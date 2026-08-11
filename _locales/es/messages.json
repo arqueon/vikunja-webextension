@@ -38,6 +38,9 @@
   "sortTasksAriaLabel": {
     "message": "Ordenar tareas"
   },
+  "viewAll": {
+    "message": "Todas las tareas"
+  },
   "addSiteTitle": {
     "message": "Añadir la página actual como tarea"
   },

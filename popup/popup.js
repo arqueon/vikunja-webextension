@@ -44,6 +44,7 @@
   const quickError = document.getElementById('quick-error');
   const sortBtn = document.getElementById('sort-btn');
   const sortMenu = document.getElementById('sort-menu');
+  const viewSwitcher = document.getElementById('view-switcher');
   const addSiteBtn = document.getElementById('add-site');
   const taskList = document.getElementById('task-list');
   const taskEmpty = document.getElementById('task-empty');
@@ -74,6 +75,7 @@
   let tasks = [];
   let quickAddMode = PrefixMode.Default;
   let currentProjectId = null;
+  let currentViewId = null;
   let labelOptions = null;
   const usersByProject = new Map();
   let currentSort = { mode: 'created', orderBy: 'desc' };
@@ -197,7 +199,7 @@
     const projId = effectiveProjectId(tokens);
     const sel = makeChip('project');
     sel.title = t('chipProject', 'Project');
-    for (const p of projectsById.values()) {
+    for (const p of realProjectList()) {
       sel.appendChild(chipOption(String(p.id), P && P.project ? `${P.project}${p.title}` : p.title));
     }
     sel.value = String(projId);
@@ -380,10 +382,13 @@
       const { lastProjectId } = await api.storage.local.get({ lastProjectId: null });
       id = lastProjectId;
     }
-    if (id && projectsById.has(id)) {
+    // The create target must be a real project (positive id); saved-filter
+    // pseudo-projects are views, not places to create tasks.
+    if (id && id > 0 && projectsById.has(id)) {
       currentProjectId = id;
     } else {
-      currentProjectId = projectsById.size ? [...projectsById.keys()][0] : null;
+      const first = realProjectList()[0];
+      currentProjectId = first ? first.id : null;
     }
   }
 
@@ -455,7 +460,7 @@
     taskEmpty.textContent = query ? t('noMatchingTasks', 'No matching tasks.') : t('noTasks', 'No tasks here yet.');
 
     const now = Date.now();
-    const showProject = !prefs.defaultProjectId;
+    const showProject = currentViewId === null ? !prefs.defaultProjectId : true;
     visible.forEach((task) => {
       const li = document.createElement('li');
       li.className = 'task';
@@ -551,13 +556,17 @@
   }
 
   // Vikunja only orders by position through a project view, so manual sorting
-  // needs a default project; otherwise fall back to newest first.
+  // needs a project or filter context; otherwise fall back to newest first.
+  function projectContext() {
+    return currentViewId !== null ? currentViewId : prefs.defaultProjectId;
+  }
+
   function effectiveSortParams() {
     const mode = SORT_MODES[currentSort.mode];
     if (!mode.needsView) {
       return { sortBy: mode.sortBy, orderBy: currentSort.orderBy };
     }
-    if (!prefs.defaultProjectId) {
+    if (!projectContext()) {
       return { sortBy: 'created', orderBy: 'desc' };
     }
     return { sortBy: 'position', orderBy: currentSort.orderBy, needsView: true };
@@ -577,15 +586,23 @@
   }
 
   async function loadTasks() {
-    const opts = { filter: prefs.customFilter || 'done = false' };
-    if (prefs.defaultProjectId) {
-      opts.projectId = prefs.defaultProjectId;
+    const opts = {};
+    // A selected filter view scopes the fetch to the filter's pseudo-project
+    // and must not carry the extension's own filter param — the API ANDs it
+    // with the saved filter's filter string, which would restrict it.
+    if (currentViewId !== null) {
+      opts.projectId = currentViewId;
+    } else {
+      opts.filter = prefs.customFilter || 'done = false';
+      if (prefs.defaultProjectId) {
+        opts.projectId = prefs.defaultProjectId;
+      }
     }
     const sort = effectiveSortParams();
     opts.sortBy = sort.sortBy;
     opts.orderBy = sort.orderBy;
     if (sort.needsView) {
-      const viewId = await resolveManualView(prefs.defaultProjectId);
+      const viewId = await resolveManualView(projectContext());
       if (viewId) {
         opts.viewId = viewId;
       } else {
@@ -680,6 +697,55 @@
     sortBtn.setAttribute('aria-expanded', String(!sortMenu.hidden));
   }
 
+  // Saved filters show up in the /projects listing as pseudo-projects with
+  // negative ids (id = filterID * -1 - 1). Real projects are always positive.
+  const realProjectList = () => [...projectsById.values()].filter((p) => p.id > 0);
+  const filterViews = () => [...projectsById.values()].filter((p) => p.id < -1);
+
+  // Renders the view switcher row: an "All tasks" chip plus one chip per
+  // favorited saved filter (server order). Hidden entirely when there are
+  // none, so the bar never takes up space for filters the user did not star.
+  function renderViewSwitcher() {
+    const views = filterViews().filter((p) => p.is_favorite);
+    viewSwitcher.textContent = '';
+    if (views.length === 0) {
+      viewSwitcher.hidden = true;
+      return;
+    }
+    const addChip = (id, label) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'view-chip';
+      if (id === currentViewId) {
+        chip.classList.add('active');
+      }
+      chip.textContent = label;
+      chip.title = label;
+      chip.addEventListener('click', () => setView(id));
+      viewSwitcher.appendChild(chip);
+    };
+    addChip(null, t('viewAll', 'All tasks'));
+    views.forEach((v) => addChip(v.id, v.title));
+    viewSwitcher.hidden = false;
+  }
+
+  async function setView(id) {
+    const next = id === null ? null : Number(id);
+    if (next === currentViewId) return;
+    currentViewId = next;
+    try {
+      await api.storage.local.set({ lastViewId: next });
+    } catch (e) {
+      // Ignore storage failures; the choice still applies for this session.
+    }
+    renderViewSwitcher();
+    try {
+      await refreshTasks();
+    } catch (e) {
+      uiShowToast(toastEl, t('couldNotReloadTasks', 'Could not reload tasks: $1', [e.message]), { error: true });
+    }
+  }
+
   async function load() {
     const config = await getConfig();
     baseUrl = config.baseUrl;
@@ -704,6 +770,11 @@
       prefs = p;
       quickAddMode = mode;
       projectsById = new Map(projects.map((pr) => [pr.id, pr]));
+      const { lastViewId } = await api.storage.local.get({ lastViewId: null });
+      if (lastViewId && projectsById.has(Number(lastViewId)) && Number(lastViewId) < -1) {
+        currentViewId = Number(lastViewId);
+      }
+      renderViewSwitcher();
       quickTitle.placeholder = PLACEHOLDERS[quickAddMode] || t('quickAddPlaceholder', 'Add a task…');
       await resolveCurrentProject();
       await resolveSort();
@@ -759,11 +830,11 @@
 
   function resolveProject(parsedProject) {
     if (parsedProject) {
-      const exact = [...projectsById.values()].find(
+      const exact = realProjectList().find(
         (p) => p.title.toLowerCase() === parsedProject.toLowerCase(),
       );
       if (exact) return exact.id;
-      const byIdentifier = [...projectsById.values()].find(
+      const byIdentifier = realProjectList().find(
         (p) =>
           p.identifier && p.identifier.toLowerCase() === parsedProject.toLowerCase(),
       );
@@ -948,7 +1019,7 @@
   function showCaptureForm(content) {
     captureTitle.value = content.title || '';
     captureDescription.value = content.description || '';
-    uiFillProjectSelect(captureProject, [...projectsById.values()], {
+    uiFillProjectSelect(captureProject, realProjectList(), {
       selectedId: prefs.defaultProjectId,
       placeholder: t('selectProject', 'Select a project'),
       fallbackToFirst: true,
@@ -1098,6 +1169,19 @@
       closeSortMenu();
     }
   });
+  // Mouse wheels only scroll vertically, so route the wheel to horizontal
+  // scrolling when the chip row overflows (no-op otherwise).
+  if (typeof viewSwitcher.addEventListener === 'function') {
+    viewSwitcher.addEventListener(
+      'wheel',
+      (e) => {
+        if (viewSwitcher.scrollWidth <= viewSwitcher.clientWidth) return;
+        e.preventDefault();
+        viewSwitcher.scrollLeft += e.deltaY + e.deltaX;
+      },
+      { passive: false },
+    );
+  }
   quickForm.addEventListener('submit', quickAdd);
   quickTitle.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {

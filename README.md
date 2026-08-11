@@ -38,6 +38,10 @@ browser.
   falls back to newest first. The default sort is set in the options; with
   "remember last sort choice" enabled, the popup stores your last pick in the
   browser's local storage and it takes precedence.
+- **Saved filters** — filters you starred in Vikunja appear as chips at the
+  top of the popup, next to an *All tasks* chip. Click a chip to show exactly
+  that saved filter, with the choice remembered for the next time you open the
+  popup. Unstar a filter in the web app and its chip disappears.
 - **Keyboard shortcuts** — `Alt+Shift+K` opens the popup, `Alt+Shift+V` adds
   the current website as a task. Inside the popup, `Ctrl+F` / `⌘F` focuses the
   search bar and `Ctrl+N` / `⌘N` the quick-add insertion bar (on macOS the
@@ -77,6 +81,17 @@ This project was built with **heavy use of an AI coding assistant**
 (opencode / "big-pickle" model): the Quick Add Magic port, the extension
 refactor, and most of the code in this repository were produced with its help
 and verified against the upstream Vikunja parser.
+
+### Caching
+
+The popup opens far more often than a project/filter list changes, so the
+`/projects` response (which also carries the saved filters used by the view
+switcher) is cached per instance in session storage. The cache is tagged with
+the instance base URL and reused for 5 minutes, so opening the popup twice in a
+row performs the task fetch but not another `/projects` request. Options page
+connection tests pass `forceRefresh` and always read fresh data. Session
+storage is volatile (cleared when the browser restarts), so the cache never
+stales across sessions.
 
 ### Smoke tests
 

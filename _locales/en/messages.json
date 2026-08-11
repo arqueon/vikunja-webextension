@@ -38,6 +38,9 @@
   "sortTasksAriaLabel": {
     "message": "Sort tasks"
   },
+  "viewAll": {
+    "message": "All tasks"
+  },
   "addSiteTitle": {
     "message": "Add current page as task"
   },

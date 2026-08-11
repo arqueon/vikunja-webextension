@@ -101,6 +101,9 @@ const userFixture = [{ id: 7, username: 'alice', name: 'Alice', email: 'alice@ex
 const projects = [
   { id: 1, title: 'Work' },
   { id: 2, title: 'Home' },
+  { id: -1, title: 'Favorites', is_favorite: true },
+  { id: -2, title: 'Due soon', is_favorite: true },
+  { id: -3, title: 'Everything', is_favorite: false },
 ];
 const tasksFixture = [
   {
@@ -479,6 +482,70 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(ids['capture-description'].value === 'Body', 'pending capture description prefilled');
   ids['capture-cancel'].listeners['click'][0]();
   assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'capture: window content returns to the list');
+
+  // --- View switcher: favorited saved filters as views ---
+  VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '', sortBy: 'created', rememberLastSort: false });
+  storage.set('lastViewId', null);
+  storage.set('lastSort', null);
+  storage.set('lastProjectId', null);
+  quickAddModeMock = 'vikunja';
+  ids['quick-title'].value = '';
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['view-switcher'].hidden === false, 'view switcher visible with favorite filters');
+  const switchChips = () => ids['view-switcher'].childNodes;
+  assert(switchChips().length === 2, 'switcher shows All + 1 favorited filter, got ' + switchChips().length);
+  assert(switchChips()[0].textContent === 'All tasks', 'first chip is All tasks, got ' + JSON.stringify(switchChips()[0].textContent));
+  assert(switchChips()[1].textContent === 'Due soon', 'second chip is the favorited filter, got ' + JSON.stringify(switchChips()[1].textContent));
+  assert(!switchChips()[1].textContent.includes('Everything'), 'non-favorited filter hidden');
+  assert(switchChips()[0].classList.contains('active'), 'All tasks active by default');
+  assert(!switchChips()[1].classList.contains('active'), 'filter chip inactive by default');
+
+  const beforeClick = calls.listTasks.length;
+  await switchChips()[1].listeners['click'][0]();
+  assert(storage.get('lastViewId') === -2, 'view choice persisted, got ' + JSON.stringify(storage.get('lastViewId')));
+  assert(calls.listTasks.length === beforeClick + 1, 'view switch reloads tasks, got ' + calls.listTasks.length + ' vs ' + beforeClick);
+  const viewFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(viewFetch.projectId === -2, 'filter view scopes to pseudo-project, got ' + JSON.stringify(viewFetch));
+  assert(!('filter' in viewFetch), 'no custom filter ANDed with the saved filter, got ' + JSON.stringify(viewFetch));
+  assert(switchChips()[1].classList.contains('active'), 'selected filter chip active');
+  assert(!switchChips()[0].classList.contains('active'), 'All tasks no longer active');
+  const projSpan = ids['task-list'].childNodes[0].childNodes[1].childNodes[0].childNodes[1];
+  assert(projSpan && projSpan.className.includes('task-project'), 'project name shown in filter view, got ' + JSON.stringify(projSpan && projSpan.className));
+
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  const restoredFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(restoredFetch.projectId === -2, 'last view restored from storage, got ' + JSON.stringify(restoredFetch));
+  assert(ids['view-switcher'].childNodes[1].classList.contains('active'), 'restored view chip active');
+
+  ids['quick-title'].value = 'x';
+  triggerInput();
+  const projChip = ids['quick-chips'].childNodes[0];
+  const projValues = projChip.options.map((o) => o.value);
+  assert(projValues.every((v) => v === '' || Number(v) > 0), 'project chip excludes pseudo-projects, got ' + JSON.stringify(projValues));
+
+  await ids['add-site'].listeners['click'][0]();
+  const capValues = ids['capture-project'].options.map((o) => o.value);
+  assert(capValues.every((v) => v === '' || Number(v) > 0), 'capture select excludes pseudo-projects, got ' + JSON.stringify(capValues));
+  ids['capture-cancel'].listeners['click'][0]();
+
+  await ids['view-switcher'].childNodes[0].listeners['click'][0]();
+  const allFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(!allFetch.projectId, 'All tasks drops the project scope, got ' + JSON.stringify(allFetch));
+  assert(allFetch.filter === 'done = false', 'All tasks restores the default filter, got ' + JSON.stringify(allFetch.filter));
+  assert(storage.get('lastViewId') === null, 'All tasks persisted as null');
+
+  VikunjaLib.listProjects = () => Promise.resolve([
+    { id: 1, title: 'Work' },
+    { id: 2, title: 'Home' },
+    { id: -2, title: 'Due soon', is_favorite: false },
+  ]);
+  ids['quick-title'].value = '';
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['view-switcher'].hidden === true, 'switcher hidden without favorite filters');
+  VikunjaLib.listProjects = () => Promise.resolve(projects);
 
   VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: 999, dueToday: false, customFilter: '' });
   eval(src);

@@ -275,6 +275,43 @@ body {
   flex: none;
 }
 
+.view-switcher {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex: none;
+  padding: 0.4rem 0.85rem;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+}
+
+.view-chip {
+  flex: none;
+  padding: 0.22rem 0.7rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-family: inherit;
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.view-chip:hover {
+  background: #eef0f3;
+  color: var(--ink);
+}
+
+.view-chip.active {
+  background: rgba(25, 106, 255, 0.12);
+  border-color: var(--blue);
+  color: var(--blue);
+}
+
 #list {
   display: flex;
   flex-direction: column;

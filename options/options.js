@@ -89,7 +89,9 @@
   }
 
   function fillProjectSelect(selected) {
-    uiFillProjectSelect(defaultProjectSelect, projects, {
+    // Saved filters surface in /projects as pseudo-projects with negative ids;
+    // only real projects are valid create targets for a default.
+    uiFillProjectSelect(defaultProjectSelect, projects.filter((p) => p.id > 0), {
       selectedId: selected,
       placeholder: t('noDefaultProject', 'No default project'),
       placeholderDisabled: false,
@@ -159,7 +161,7 @@
         'ok',
       );
       try {
-        projects = await listProjects();
+        projects = await listProjects({ forceRefresh: true });
         fillProjectSelect(config.defaultProjectId);
       } catch (e) {
         showStatus(t('connectedNoProjects', 'Connected, but could not load projects: $1', [e.message]), 'error');
