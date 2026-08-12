@@ -15,11 +15,8 @@ STAGE="$(mktemp -d)"
 trap 'rm -rf "$STAGE"' EXIT
 
 if [[ "${1:-}" == "--manifest-only" ]]; then
-  if [[ -f "$ROOT/.manifest-firefox.json" ]]; then
-    cat "$ROOT/.manifest-firefox.json"
-  else
-    cat "$ROOT/manifest.json"
-  fi
+  "$ROOT/scripts/_stage.sh" "$STAGE"
+  cat "$STAGE/manifest.json"
   exit 0
 fi
 

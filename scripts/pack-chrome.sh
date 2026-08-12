@@ -29,11 +29,9 @@ chrome_manifest() {
 }
 
 if [[ "${1:-}" == "--manifest-only" ]]; then
-  TMP="$(mktemp)"
-  trap 'rm -rf "$STAGE" "$TMP"' EXIT
-  cp "$ROOT/manifest.json" "$TMP"
-  chrome_manifest "$TMP"
-  cat "$TMP"
+  "$ROOT/scripts/_stage.sh" "$STAGE"
+  chrome_manifest "$STAGE/manifest.json"
+  cat "$STAGE/manifest.json"
   exit 0
 fi
 
