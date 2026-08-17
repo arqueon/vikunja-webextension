@@ -185,20 +185,41 @@
     elementList.textContent = '';
     for (const inst of elementInstances) {
       const pattern = elementInstancePatterns([inst])[0];
+      const granted = pattern ? await hasHostPermissions([pattern]) : false;
       const li = document.createElement('li');
       const url = document.createElement('span');
       url.className = 'url';
       url.textContent = inst.url;
-      const badge = elementBadge(pattern ? await hasHostPermissions([pattern]) : false);
+      const badge = elementBadge(granted);
+      li.appendChild(url);
+      li.appendChild(badge);
+      if (!granted) {
+        const grantBtn = document.createElement('button');
+        grantBtn.type = 'button';
+        grantBtn.className = 'secondary';
+        grantBtn.textContent = t('grantButton', 'Grant');
+        grantBtn.addEventListener('click', () => grantElementPermission(inst, grantBtn));
+        li.appendChild(grantBtn);
+      }
       const removeBtn = document.createElement('button');
       removeBtn.type = 'button';
       removeBtn.className = 'secondary';
       removeBtn.textContent = t('removeButton', 'Remove');
       removeBtn.addEventListener('click', () => removeElementInstance(inst.url));
-      li.appendChild(url);
-      li.appendChild(badge);
       li.appendChild(removeBtn);
       elementList.appendChild(li);
+    }
+  }
+
+  async function grantElementPermission(inst, btn) {
+    const pattern = elementInstancePatterns([inst])[0];
+    if (!pattern) return;
+    btn.disabled = true;
+    try {
+      await requestHostPermissions([pattern]);
+    } finally {
+      btn.disabled = false;
+      renderElementInstances();
     }
   }
 
