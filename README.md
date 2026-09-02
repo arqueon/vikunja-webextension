@@ -5,6 +5,9 @@ search your tasks, add new ones with the full **Quick Add Magic** syntax, and
 capture the current page or selected text as a task — without leaving your
 browser.
 
+[![Firefox Add-ons](https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png)](https://addons.mozilla.org/firefox/addon/vikunja/) [![Chrome Web Store](https://developer.chrome.com/static/docs/webstore/branding/image/tbyBjqi7Zu733AAKA5n4.png)](https://chromewebstore.google.com/detail/vikunja/idefimhgolcfeccobnohbghohdmahedh)
+
+
 ## Features
 
 - **Toolbar popup** — a searchable task list with complete/reopen checkboxes,
