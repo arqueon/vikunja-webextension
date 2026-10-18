@@ -105,7 +105,7 @@ const V = globalThis.VikunjaLib;
 
 (async () => {
   const prefs = await V.getPrefs();
-  assert.deepStrictEqual(prefs, { defaultProjectId: '7', dueToday: true, customFilter: 'done = false', sortBy: 'position', rememberLastSort: false, elementReactAfterAdd: false, elementTag: '' });
+  assert.deepStrictEqual(prefs, { defaultProjectId: '7', dueToday: true, customFilter: 'done = false', sortBy: 'position', rememberLastSort: false, elementReactAfterAdd: false, elementTag: '', theme: 'auto' });
 
   assert.deepStrictEqual(V.hostPermissionPatterns({ baseUrl: 'https://vikunja.example' }), ['https://vikunja.example/*']);
   assert.deepStrictEqual(V.hostPermissionPatterns({ baseUrl: 'https://vikunja.example:8443' }), ['https://vikunja.example:8443/*']);

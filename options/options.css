@@ -81,7 +81,8 @@ ul.permissions li {
 ul.permissions code,
 .hint code {
   font-size: 0.75rem;
-  background: #eef0f3;
+  background: var(--surface-alt);
+  color: var(--ink);
   border-radius: 4px;
   padding: 0.05rem 0.3rem;
 }
@@ -114,12 +115,12 @@ button#save:hover {
 }
 
 .status.ok {
-  background: #e7f6ee;
+  background: rgba(34, 197, 94, 0.15);
   color: var(--ok);
 }
 
 .status.error {
-  background: #fdeceb;
+  background: rgba(220, 38, 38, 0.15);
   color: var(--err);
 }
 
@@ -162,20 +163,22 @@ button#save:hover {
 }
 
 .badge.granted {
-  background: #e7f6ee;
+  background: rgba(34, 197, 94, 0.15);
   color: var(--ok);
 }
 
 .badge.missing {
-  background: #fff3cd;
-  color: #8a6d1a;
+  background: rgba(249, 115, 22, 0.15);
+  color: var(--orange);
 }
 
 dialog#element-dialog {
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1.25rem;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
   width: min(420px, calc(100vw - 2rem));
 }
 

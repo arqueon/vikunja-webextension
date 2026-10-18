@@ -69,6 +69,17 @@
 
   <section id="list" class="view" hidden>
     <div id="view-switcher" class="view-switcher" hidden></div>
+    <div class="preset-filter-bar">
+      <div class="preset-chips">
+        <button type="button" class="preset-chip active" data-preset="all">All</button>
+        <button type="button" class="preset-chip" data-preset="due">Today + Overdue</button>
+        <button type="button" class="preset-chip" data-preset="favorites">Favorites</button>
+      </div>
+      <button type="button" id="toggle-completed" class="icon-toggle-btn" title="Show completed tasks" aria-pressed="false">
+        <span class="toggle-icon">👁</span>
+        <span class="toggle-label">Done</span>
+      </button>
+    </div>
     <ul id="task-list" class="task-list"></ul>
     <p id="task-empty" class="empty" hidden data-i18n="noTasks">No tasks here yet.</p>
     <form id="quick-add" class="quick-add">
@@ -92,7 +103,10 @@
   </section>
 
   <section id="capture" class="view" hidden>
-    <h2 class="capture-title" data-i18n="captureTitle">Add task to Vikunja</h2>
+    <div class="capture-header-row">
+      <h2 class="capture-title" data-i18n="captureTitle">Add task to Vikunja</h2>
+      <button type="button" id="capture-direct-add" class="secondary" title="Save directly with current tab info and default project" data-i18n-title="quickDirectSaveTitle">⚡ Direct Save</button>
+    </div>
     <form id="capture-form" class="capture-form">
       <label class="field">
         <span class="label" data-i18n="fieldTitle">Title</span>
@@ -102,16 +116,38 @@
         <span class="label" data-i18n="fieldProject">Project</span>
         <select id="capture-project"></select>
       </label>
+      <div class="field-row">
+        <label class="field field-half">
+          <span class="label" data-i18n="fieldPriority">Priority</span>
+          <select id="capture-priority">
+            <option value="0">No priority</option>
+            <option value="1">Low (1)</option>
+            <option value="2">Medium (2)</option>
+            <option value="3">High (3)</option>
+            <option value="4">Urgent (4)</option>
+            <option value="5">Do now (5)</option>
+          </select>
+        </label>
+        <label class="field field-half">
+          <span class="label" data-i18n="fieldDueDate">Due date</span>
+          <input type="datetime-local" id="capture-due" name="dueDate" />
+        </label>
+      </div>
+      <div class="date-presets-row">
+        <button type="button" class="preset-btn" data-preset="today">Today</button>
+        <button type="button" class="preset-btn" data-preset="tomorrow">Tomorrow</button>
+        <button type="button" class="preset-btn" data-preset="weekend">Weekend</button>
+        <button type="button" class="preset-btn" data-preset="nextweek">Next week</button>
+        <button type="button" class="preset-btn" data-preset="clear">No date</button>
+      </div>
       <label class="field">
-        <span class="label" data-i18n="fieldDueToday">Due today</span>
-        <span class="row">
-          <input type="checkbox" id="capture-due-today" name="dueToday" />
-          <span class="hint" data-i18n="hintDueTodayCapture">Set the task due date to today</span>
-        </span>
+        <span class="label" data-i18n="fieldLabels">Labels (comma-separated or select below)</span>
+        <input type="text" id="capture-labels-input" placeholder="e.g. readlater, research" autocomplete="off" />
+        <div id="capture-labels-chips" class="labels-cloud"></div>
       </label>
       <label class="field">
         <span class="label" data-i18n="fieldDescription">Description (optional)</span>
-        <textarea id="capture-description" name="description" rows="4" spellcheck="false"></textarea>
+        <textarea id="capture-description" name="description" rows="3" spellcheck="false"></textarea>
       </label>
       <div class="actions">
         <span id="capture-error" class="error" hidden></span>

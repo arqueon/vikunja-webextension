@@ -25,6 +25,7 @@
   const tokenInput = document.getElementById('token');
   const defaultProjectSelect = document.getElementById('default-project');
   const dueTodayInput = document.getElementById('due-today');
+  const themeInput = document.getElementById('theme');
   const customFilterInput = document.getElementById('custom-filter');
   const sortByInput = document.getElementById('sort-by');
   const rememberLastSortInput = document.getElementById('remember-last-sort');
@@ -41,6 +42,16 @@
   const elementCancelBtn = document.getElementById('element-cancel');
   const elementReactAfterAddInput = document.getElementById('element-react-after-add');
   const elementTagInput = document.getElementById('element-tag');
+
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
 
   let projects = [];
   let elementInstances = [];
@@ -72,6 +83,7 @@
       rememberLastSort: rememberLastSortInput.checked,
       elementReactAfterAdd: elementReactAfterAddInput.checked,
       elementTag: elementTagInput.value.trim(),
+      theme: themeInput ? themeInput.value : 'auto',
     };
   }
 
@@ -104,6 +116,10 @@
     urlInput.value = config.baseUrl;
     tokenInput.value = config.token;
     dueTodayInput.checked = prefs.dueToday;
+    if (themeInput && prefs.theme) {
+      themeInput.value = prefs.theme;
+      applyTheme(prefs.theme);
+    }
     customFilterInput.value = prefs.customFilter;
     sortByInput.value = prefs.sortBy || 'position';
     rememberLastSortInput.checked = prefs.rememberLastSort;
@@ -295,6 +311,9 @@
     }
   });
   elementUrlInput.addEventListener('input', () => showElementStatus('', ''));
+  if (themeInput) {
+    themeInput.addEventListener('change', () => applyTheme(themeInput.value));
+  }
 
   init();
 })();

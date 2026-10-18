@@ -3,6 +3,22 @@
 
   window.I18n.applyPage();
 
+  function applyTheme(theme) {
+    if (theme === 'dark') {
+      document.documentElement.setAttribute('data-theme', 'dark');
+    } else if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+    }
+  }
+
+  if (window.VikunjaLib?.api?.storage?.sync?.get) {
+    window.VikunjaLib.api.storage.sync.get({ theme: 'auto' }).then((st) => {
+      if (st && st.theme) applyTheme(st.theme);
+    }).catch(() => {});
+  }
+
   const {
     api,
     getConfig,
@@ -12,6 +28,9 @@
     listProjectViews,
     createTask,
     completeTask,
+    updateTask,
+    deleteTask,
+    setTaskLabels,
     closePopup,
     isFirefox,
     getQuickAddMagicMode,
@@ -19,6 +38,7 @@
     listLabels,
     createLabel,
     addLabelToTask,
+    findOrCreateLabel,
     addAssigneeToTask,
     buildTaskContent,
     getActiveTab,
@@ -30,7 +50,16 @@
   } = window.VikunjaLib;
 
   const { parseTaskText, PrefixMode, PREFIXES, cleanupItemText, analyzeTaskText, removeSpan, repeatTaskFields } = window.QuickAdd;
-  const { openOptions: uiOpenOptions, showToast: uiShowToast, fillProjectSelect: uiFillProjectSelect } = window.UiLib;
+  const {
+    openOptions: uiOpenOptions,
+    showToast: uiShowToast,
+    fillProjectSelect: uiFillProjectSelect,
+    projectOptions: uiProjectOptions,
+    projectPath: uiProjectPath,
+    priorityLabel: uiPriorityLabel,
+    duePresetDate: uiDuePresetDate,
+    formatDateTimeLocal: uiFormatDateTimeLocal,
+  } = window.UiLib;
   const { t } = window.I18n;
 
   const configPrompt = document.getElementById('config-prompt');
@@ -58,10 +87,16 @@
   const captureTitle = document.getElementById('capture-title');
   const captureProject = document.getElementById('capture-project');
   const captureDueToday = document.getElementById('capture-due-today');
+  const capturePriority = document.getElementById('capture-priority');
+  const captureDue = document.getElementById('capture-due');
+  const captureLabelsInput = document.getElementById('capture-labels-input');
+  const captureLabelsChips = document.getElementById('capture-labels-chips');
   const captureDescription = document.getElementById('capture-description');
   const captureCancel = document.getElementById('capture-cancel');
   const captureAdd = document.getElementById('capture-add');
+  const captureDirectAdd = document.getElementById('capture-direct-add');
   const captureError = document.getElementById('capture-error');
+  const toggleCompletedBtn = document.getElementById('toggle-completed');
 
   const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   searchInput.placeholder = `${t('searchPlaceholder', 'Search tasks…')} (${isMac ? '⌘F' : 'Ctrl+F'})`;
@@ -76,10 +111,14 @@
   let quickAddMode = PrefixMode.Default;
   let currentProjectId = null;
   let currentViewId = null;
+  let activePreset = 'all'; // 'all' | 'due' | 'favorites'
+  let showCompletedTasks = false;
+  let expandedTaskId = null;
   let labelOptions = null;
   const usersByProject = new Map();
   let currentSort = { mode: 'created', orderBy: 'desc' };
   let projectViews = null;
+  let lastCapturedTabInfo = null;
 
   const SORT_MODES = {
     position: { label: t('sortManually', 'Manually sorted'), sortBy: 'position', orderBy: 'asc', needsView: true },
@@ -447,23 +486,41 @@
     return label;
   }
 
+  function filterTasksByPreset(taskList) {
+    const now = Date.now();
+    return taskList.filter((task) => {
+      if (activePreset === 'due') {
+        if (!hasDueDate(task.due_date)) return false;
+        const dueTime = new Date(task.due_date).getTime();
+        const isOverdue = dueTime < now;
+        const isToday = formatDue(task.due_date) === t('todayLabel', 'Today');
+        if (!isOverdue && !isToday) return false;
+      } else if (activePreset === 'favorites') {
+        if (task.is_favorite !== true) return false;
+      }
+      return true;
+    });
+  }
+
   function renderTasks() {
     taskList.textContent = '';
     const query = searchInput.value.trim().toLowerCase();
-    const visible = query
-      ? tasks.filter((t) => {
+    let visible = filterTasksByPreset(tasks);
+    if (query) {
+      visible = visible.filter((t) => {
         const hay = `${t.title || ''} ${t.description || ''}`.toLowerCase();
         return hay.includes(query);
-      })
-      : tasks;
+      });
+    }
     taskEmpty.hidden = visible.length > 0;
     taskEmpty.textContent = query ? t('noMatchingTasks', 'No matching tasks.') : t('noTasks', 'No tasks here yet.');
 
     const now = Date.now();
     const showProject = currentViewId === null ? !prefs.defaultProjectId : true;
     visible.forEach((task) => {
+      const isExpanded = expandedTaskId === task.id;
       const li = document.createElement('li');
-      li.className = 'task';
+      li.className = 'task' + (isExpanded ? ' expanded' : '');
       li.setAttribute('data-task-id', task.id);
       if (task.done) {
         li.classList.add('done');
@@ -515,6 +572,14 @@
         meta.appendChild(dueEl);
       }
 
+      if (task.priority > 0) {
+        const prioEl = document.createElement('span');
+        prioEl.className = 'task-due';
+        prioEl.style.color = task.priority >= 4 ? 'var(--err)' : 'var(--orange)';
+        prioEl.textContent = uiPriorityLabel(task.priority);
+        meta.appendChild(prioEl);
+      }
+
       (Array.isArray(task.labels) ? task.labels : []).forEach((label) => {
         const tag = document.createElement('span');
         tag.className = 'task-tag';
@@ -532,6 +597,155 @@
       }
 
       li.appendChild(body);
+
+      // Expand / collapse action button
+      const expandBtn = document.createElement('button');
+      expandBtn.type = 'button';
+      expandBtn.className = 'task-expand-btn';
+      expandBtn.title = isExpanded ? 'Collapse' : 'Edit task details';
+      expandBtn.textContent = isExpanded ? '▲' : '▼';
+      expandBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        expandedTaskId = isExpanded ? null : task.id;
+        renderTasks();
+      });
+      li.appendChild(expandBtn);
+
+      // Inline Task Editor when expanded
+      if (isExpanded) {
+        const editor = document.createElement('div');
+        editor.className = 'task-editor';
+
+        // Title edit input
+        const editTitleInput = document.createElement('input');
+        editTitleInput.type = 'text';
+        editTitleInput.value = task.title || '';
+        editTitleInput.placeholder = 'Task title';
+        editor.appendChild(editTitleInput);
+
+        // Row with Project and Priority
+        const projPrioRow = document.createElement('div');
+        projPrioRow.className = 'editor-row';
+
+        const projSelect = document.createElement('select');
+        projSelect.style.flex = '1';
+        uiFillProjectSelect(projSelect, realProjectList(), {
+          selectedId: task.project_id,
+          placeholder: t('selectProject', 'Select project'),
+          fallbackToFirst: true,
+        });
+        projPrioRow.appendChild(projSelect);
+
+        const prioSelect = document.createElement('select');
+        prioSelect.style.width = '120px';
+        [0, 1, 2, 3, 4, 5].forEach((p) => {
+          const opt = document.createElement('option');
+          opt.value = String(p);
+          opt.textContent = uiPriorityLabel(p);
+          if (p === (Number(task.priority) || 0)) opt.selected = true;
+          prioSelect.appendChild(opt);
+        });
+        projPrioRow.appendChild(prioSelect);
+        editor.appendChild(projPrioRow);
+
+        // Due date input
+        const dueRow = document.createElement('div');
+        dueRow.className = 'editor-row';
+        const dueInput = document.createElement('input');
+        dueInput.type = 'datetime-local';
+        dueInput.style.flex = '1';
+        if (hasDueDate(task.due_date)) {
+          dueInput.value = uiFormatDateTimeLocal(new Date(task.due_date));
+        }
+        dueRow.appendChild(dueInput);
+        editor.appendChild(dueRow);
+
+        // Description textarea
+        const descInput = document.createElement('textarea');
+        descInput.rows = 3;
+        descInput.placeholder = 'Description (optional)';
+        descInput.value = task.description || '';
+        editor.appendChild(descInput);
+
+        // Actions: Save, Open Web, Delete (two-step)
+        const actRow = document.createElement('div');
+        actRow.className = 'task-editor-actions';
+
+        const saveBtn = document.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'primary';
+        saveBtn.textContent = 'Save';
+        saveBtn.addEventListener('click', async () => {
+          saveBtn.disabled = true;
+          try {
+            const patch = {
+              title: editTitleInput.value.trim() || task.title,
+              project_id: Number(projSelect.value) || task.project_id,
+              priority: Number(prioSelect.value) || 0,
+              description: descInput.value.trim(),
+            };
+            if (dueInput.value) {
+              patch.due_date = new Date(dueInput.value).toISOString();
+            } else {
+              patch.due_date = '0001-01-01T00:00:00Z';
+            }
+            await updateTask(task.id, patch);
+            uiShowToast(toastEl, 'Task updated.');
+            expandedTaskId = null;
+            await refreshTasks();
+          } catch (err) {
+            uiShowToast(toastEl, `Save failed: ${err.message}`, { error: true });
+          } finally {
+            saveBtn.disabled = false;
+          }
+        });
+        actRow.appendChild(saveBtn);
+
+        const openBtn = document.createElement('button');
+        openBtn.type = 'button';
+        openBtn.className = 'secondary';
+        openBtn.textContent = 'Open ↗';
+        openBtn.addEventListener('click', () => {
+          window.open(`${baseUrl}/tasks/${task.id}`, '_blank');
+          closePopup();
+        });
+        actRow.appendChild(openBtn);
+
+        const deleteBtn = document.createElement('button');
+        deleteBtn.type = 'button';
+        deleteBtn.className = 'btn-danger';
+        deleteBtn.textContent = 'Delete';
+        let deleteTimer = null;
+        deleteBtn.addEventListener('click', async () => {
+          if (!deleteBtn.classList.contains('armed')) {
+            deleteBtn.classList.add('armed');
+            deleteBtn.textContent = 'Confirm? (3s)';
+            deleteTimer = setTimeout(() => {
+              deleteBtn.classList.remove('armed');
+              deleteBtn.textContent = 'Delete';
+            }, 3500);
+            return;
+          }
+          clearTimeout(deleteTimer);
+          deleteBtn.disabled = true;
+          try {
+            await deleteTask(task.id);
+            uiShowToast(toastEl, 'Task deleted.');
+            expandedTaskId = null;
+            await refreshTasks();
+          } catch (err) {
+            uiShowToast(toastEl, `Delete failed: ${err.message}`, { error: true });
+            deleteBtn.classList.remove('armed');
+            deleteBtn.textContent = 'Delete';
+            deleteBtn.disabled = false;
+          }
+        });
+        actRow.appendChild(deleteBtn);
+
+        editor.appendChild(actRow);
+        li.appendChild(editor);
+      }
+
       taskList.appendChild(li);
     });
   }
@@ -593,7 +807,9 @@
     if (currentViewId !== null) {
       opts.projectId = currentViewId;
     } else {
-      opts.filter = prefs.customFilter || 'done = false';
+      opts.filter = showCompletedTasks
+        ? (prefs.customFilter || '')
+        : (prefs.customFilter || 'done = false');
       if (prefs.defaultProjectId) {
         opts.projectId = prefs.defaultProjectId;
       }
@@ -768,6 +984,9 @@
         getQuickAddMagicMode().catch(() => PrefixMode.Default),
       ]);
       prefs = p;
+      if (prefs && prefs.theme) {
+        applyTheme(prefs.theme);
+      }
       quickAddMode = mode;
       projectsById = new Map(projects.map((pr) => [pr.id, pr]));
       const { lastViewId } = await api.storage.local.get({ lastViewId: null });
@@ -1017,6 +1236,7 @@
   }
 
   function showCaptureForm(content) {
+    lastCapturedTabInfo = content;
     captureTitle.value = content.title || '';
     captureDescription.value = content.description || '';
     uiFillProjectSelect(captureProject, realProjectList(), {
@@ -1024,12 +1244,91 @@
       placeholder: t('selectProject', 'Select a project'),
       fallbackToFirst: true,
     });
-    captureDueToday.checked = prefs.dueToday;
+    if (capturePriority) capturePriority.value = '0';
+    if (captureDue) {
+      if (prefs.dueToday) {
+        captureDue.value = uiFormatDateTimeLocal(uiDuePresetDate('today'));
+      } else {
+        captureDue.value = '';
+      }
+    }
+    if (captureLabelsInput) captureLabelsInput.value = '';
+    renderCaptureLabelChips();
+
     setCaptureError('');
     showView(capture);
     captureTitle.focus();
     if (typeof captureTitle.select === 'function') {
       captureTitle.select();
+    }
+  }
+
+  function renderCaptureLabelChips() {
+    if (!captureLabelsChips) return;
+    captureLabelsChips.textContent = '';
+    const currentLabels = parseLabelNames(captureLabelsInput ? captureLabelsInput.value : '');
+    (labelOptions || []).slice(0, 15).forEach((lb) => {
+      const chip = document.createElement('span');
+      const isSelected = currentLabels.includes(lb.title.toLowerCase());
+      chip.className = 'label-chip-clickable' + (isSelected ? ' selected' : '');
+      chip.textContent = lb.title;
+      chip.addEventListener('click', () => {
+        toggleCaptureLabel(lb.title);
+      });
+      captureLabelsChips.appendChild(chip);
+    });
+  }
+
+  function parseLabelNames(str) {
+    return String(str || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s.toLowerCase());
+  }
+
+  function toggleCaptureLabel(name) {
+    if (!captureLabelsInput) return;
+    const current = parseLabelNames(captureLabelsInput.value);
+    const lower = name.toLowerCase();
+    const idx = current.indexOf(lower);
+    if (idx !== -1) {
+      current.splice(idx, 1);
+    } else {
+      current.push(lower);
+    }
+    captureLabelsInput.value = current.join(', ');
+    renderCaptureLabelChips();
+  }
+
+  async function directSaveUrl() {
+    const info = lastCapturedTabInfo || await buildTaskContent({}, (await getActiveTab()) || {});
+    const projId = prefs.defaultProjectId || (realProjectList()[0] && realProjectList()[0].id);
+    if (!projId) {
+      uiShowToast(toastEl, t('pleaseSelectProject', 'Please configure a default project in settings.'), { error: true });
+      return;
+    }
+    const body = {
+      title: info.title || 'Saved Webpage',
+      description: info.description || info.url || '',
+    };
+    if (prefs.dueToday) {
+      body.due_date = dueTodayISO();
+    }
+    try {
+      if (captureDirectAdd) captureDirectAdd.disabled = true;
+      const created = await createTask(projId, body);
+      showView(list);
+      uiShowToast(toastEl, t('taskAdded', 'Task added.'), {
+        link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` },
+      });
+      await refreshTasks();
+      flashNewTask(created.id);
+      quickTitle.focus();
+    } catch (err) {
+      uiShowToast(toastEl, `Direct save failed: ${err.message}`, { error: true });
+    } finally {
+      if (captureDirectAdd) captureDirectAdd.disabled = false;
     }
   }
 
@@ -1066,10 +1365,22 @@
       if (description) {
         body.description = description;
       }
-      if (captureDueToday.checked) {
+      if (capturePriority && Number(capturePriority.value) > 0) {
+        body.priority = Number(capturePriority.value);
+      }
+      if (captureDue && captureDue.value) {
+        body.due_date = new Date(captureDue.value).toISOString();
+      } else if (captureDueToday && captureDueToday.checked) {
         body.due_date = dueTodayISO();
       }
       const created = await createTask(captureProject.value, body);
+
+      // Add labels if specified
+      if (captureLabelsInput && captureLabelsInput.value.trim()) {
+        const rawLabels = captureLabelsInput.value.split(',').map((s) => s.trim()).filter(Boolean);
+        await addLabelsToTask(created.id, rawLabels);
+      }
+
       await api.storage.local.set({ lastProjectId: Number(captureProject.value) });
       showView(list);
       uiShowToast(toastEl, t('taskAdded', 'Task added.'), {
@@ -1125,9 +1436,52 @@
     }
   });
   addSiteBtn.addEventListener('click', addCurrentSite);
+  if (captureDirectAdd) {
+    captureDirectAdd.addEventListener('click', directSaveUrl);
+  }
   captureForm.addEventListener('submit', submitCapture);
   captureCancel.addEventListener('click', closeCaptureForm);
   captureTitle.addEventListener('input', () => setCaptureError(''));
+  if (captureLabelsInput) {
+    captureLabelsInput.addEventListener('input', renderCaptureLabelChips);
+  }
+
+  // Due date preset buttons in capture form
+  document.querySelectorAll('.preset-btn').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const preset = btn.getAttribute('data-preset');
+      if (!captureDue) return;
+      if (preset === 'clear') {
+        captureDue.value = '';
+      } else {
+        captureDue.value = uiFormatDateTimeLocal(uiDuePresetDate(preset));
+      }
+    });
+  });
+
+  // Preset filter bar (All / Today+Overdue / Favorites)
+  document.querySelectorAll('.preset-chip').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-chip').forEach((c) => c.classList.remove('active'));
+      btn.classList.add('active');
+      activePreset = btn.getAttribute('data-preset') || 'all';
+      renderTasks();
+    });
+  });
+
+  // Toggle completed tasks button
+  if (toggleCompletedBtn) {
+    toggleCompletedBtn.addEventListener('click', async () => {
+      showCompletedTasks = !showCompletedTasks;
+      toggleCompletedBtn.setAttribute('aria-pressed', String(showCompletedTasks));
+      try {
+        await refreshTasks();
+      } catch (err) {
+        uiShowToast(toastEl, `Reload failed: ${err.message}`, { error: true });
+      }
+    });
+  }
+
   sortBtn.addEventListener('click', (e) => {
     e.stopPropagation();
     toggleSortMenu();
