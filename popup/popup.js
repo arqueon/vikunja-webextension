@@ -522,6 +522,7 @@
       const li = document.createElement('li');
       li.className = 'task' + (isExpanded ? ' expanded' : '');
       li.setAttribute('data-task-id', task.id);
+      li.setAttribute('data-priority', task.priority || 0);
       if (task.done) {
         li.classList.add('done');
       }
@@ -1479,6 +1480,15 @@
       } catch (err) {
         uiShowToast(toastEl, `Reload failed: ${err.message}`, { error: true });
       }
+    });
+  }
+
+  const openWebBtn = document.getElementById('open-web');
+  if (openWebBtn) {
+    openWebBtn.addEventListener('click', () => {
+      const url = baseUrl || 'https://try.vikunja.io';
+      window.open(url, '_blank');
+      closePopup();
     });
   }
 

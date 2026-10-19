@@ -13,15 +13,30 @@ body {
 .header {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.6rem 0.85rem;
+  gap: 0.6rem;
+  padding: 0.55rem 0.85rem;
+  background: var(--surface);
   border-bottom: 1px solid var(--border);
+  position: relative;
+  z-index: 5;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex: none;
 }
 
 #logo {
   flex: none;
   cursor: pointer;
   border-radius: 6px;
+  transition: transform 0.15s ease;
+}
+
+#logo:hover {
+  transform: scale(1.05);
 }
 
 #logo:focus-visible {
@@ -29,39 +44,78 @@ body {
   box-shadow: var(--focus-ring);
 }
 
-.header input[type="search"] {
+.brand-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--ink);
+  letter-spacing: -0.02em;
+  user-select: none;
+}
+
+.search-box {
+  position: relative;
   flex: 1;
+  display: flex;
+  align-items: center;
   min-width: 0;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.85rem;
+}
+
+.search-box .search-icon {
+  position: absolute;
+  left: 0.6rem;
+  pointer-events: none;
+  color: var(--muted);
+}
+
+.search-box input[type="search"] {
+  width: 100%;
+  padding: 0.35rem 0.6rem 0.35rem 2rem;
+  font-size: 0.82rem;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   background: var(--surface-alt);
   color: var(--ink);
   font-family: inherit;
+  transition: border-color 0.15s ease, background 0.15s ease, box-shadow 0.15s ease;
 }
 
-.header input[type="search"]:focus {
+.search-box input[type="search"]:focus {
   outline: none;
   border-color: var(--blue);
   box-shadow: var(--focus-ring);
   background: var(--input-bg);
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  flex: none;
+}
+
 .icon-btn {
-  margin-left: auto;
-  padding: 0.35rem;
+  width: 30px;
+  height: 30px;
+  padding: 0;
   border: none;
   border-radius: 6px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .icon-btn:hover {
   background: var(--surface-hover);
   color: var(--ink);
+}
+
+.icon-btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
 }
 
 .sort-wrap {
@@ -326,21 +380,50 @@ body {
   flex: 1;
   min-height: 0;
   margin: 0;
-  padding: 0 0.5rem;
+  padding: 0.5rem 0.85rem;
   overflow-y: auto;
+  scrollbar-width: thin;
 }
 
 .task {
+  position: relative;
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
-  gap: 0.6rem;
-  padding: 0.5rem 0;
-  border-bottom: 1px solid var(--border-subtle);
+  gap: 0.55rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.4rem;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-left: 3.5px solid var(--card-border);
+  border-radius: 6px;
+  box-shadow: var(--shadow-sm);
+  transition: background 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.task:last-child {
-  border-bottom: none;
+.task:hover {
+  background: var(--card-hover);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.task[data-priority="1"] { border-left-color: var(--prio-1); }
+.task[data-priority="2"] { border-left-color: var(--prio-2); }
+.task[data-priority="3"] { border-left-color: var(--prio-3); }
+.task[data-priority="4"] { border-left-color: var(--prio-4); }
+.task[data-priority="5"] { border-left-color: var(--prio-5); }
+
+.task.done {
+  opacity: 0.65;
+}
+
+.task.done .task-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.task.expanded {
+  border-color: var(--blue);
+  box-shadow: var(--shadow-md);
 }
 
 .task--new {
@@ -509,25 +592,40 @@ body {
   padding: 0.35rem 0.85rem;
   background: var(--surface-alt);
   border-bottom: 1px solid var(--border);
+  flex: none;
 }
 
 .preset-chips {
   display: flex;
   align-items: center;
-  gap: 0.3rem;
+  gap: 0.35rem;
   overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.preset-chips::-webkit-scrollbar {
+  display: none;
 }
 
 .preset-chip {
-  padding: 0.2rem 0.55rem;
-  border-radius: 999px;
-  font-size: 0.72rem;
-  font-weight: 600;
+  padding: 0.22rem 0.55rem;
+  border-radius: 6px;
+  font-size: 0.74rem;
+  font-weight: 500;
   border: 1px solid var(--border);
   background: var(--surface);
   color: var(--muted);
   cursor: pointer;
   white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+
+.preset-chip .preset-icon {
+  flex: none;
+  opacity: 0.75;
 }
 
 .preset-chip:hover {
@@ -536,22 +634,30 @@ body {
 }
 
 .preset-chip.active {
-  background: rgba(37, 99, 235, 0.15);
+  background: var(--blue-subtle);
   border-color: var(--blue);
+  color: var(--blue);
+  font-weight: 600;
+}
+
+.preset-chip.active .preset-icon {
+  opacity: 1;
   color: var(--blue);
 }
 
 .icon-toggle-btn {
   display: inline-flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.2rem 0.5rem;
+  gap: 0.3rem;
+  padding: 0.22rem 0.55rem;
   border: 1px solid var(--border);
   border-radius: 6px;
   background: var(--surface);
-  font-size: 0.72rem;
+  font-size: 0.74rem;
+  font-weight: 500;
   color: var(--muted);
   cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
 }
 
 .icon-toggle-btn:hover {
@@ -560,35 +666,26 @@ body {
 }
 
 .icon-toggle-btn[aria-pressed="true"] {
-  background: rgba(37, 99, 235, 0.15);
-  border-color: var(--blue);
-  color: var(--blue);
+  background: rgba(16, 185, 129, 0.15);
+  border-color: var(--ok);
+  color: var(--ok);
   font-weight: 600;
 }
 
-.task {
-  position: relative;
-  transition: background 0.15s ease;
-  border-radius: 6px;
-}
-
-.task.expanded {
-  background: var(--card-bg);
-  border: 1px solid var(--card-border);
-  margin: 0.3rem 0;
-  padding: 0.5rem;
-}
-
 .task-expand-btn {
-  background: transparent;
+  flex: none;
+  width: 22px;
+  height: 22px;
   border: none;
-  padding: 0.2rem;
-  cursor: pointer;
-  color: var(--muted);
   border-radius: 4px;
-  display: flex;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
+  font-size: 0.65rem;
+  transition: background 0.15s ease, color 0.15s ease;
 }
 
 .task-expand-btn:hover {
