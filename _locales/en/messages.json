@@ -3,10 +3,10 @@
     "message": "en"
   },
   "extDescription": {
-    "message": "Manage Vikunja tasks from your browser toolbar, with a task list, quick add and capture of the current page."
+    "message": "Companion extension for Vikunja: direct URL capture, inline task editor, preset filters, and official Vikunja theme support."
   },
   "cmdOpenPopup": {
-    "message": "Open the Vikunja popup"
+    "message": "Open the Vikunja Companion popup"
   },
   "cmdAddSite": {
     "message": "Add the current website as a task"

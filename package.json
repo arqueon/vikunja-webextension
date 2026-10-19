@@ -1,11 +1,14 @@
 {
-  "name": "vikunja-webextension",
-  "version": "0.7.1",
+  "name": "vikunja-companion",
+  "version": "1.0.0",
   "private": true,
-  "description": "Manage Vikunja tasks from your browser toolbar, with a task list, quick add and capture of the current page.",
+  "description": "Companion extension for Vikunja: direct URL capture, inline task editor, preset filters, and official Vikunja theme support.",
+  "author": "Rubén A. Velázquez <ruben@arqueonautis.org>",
+  "homepage": "https://github.com/arqueon/vikunja-webextension",
   "license": "AGPL-3.0-or-later",
   "scripts": {
     "lint": "eslint .",
+    "lint:amo": "STAGE=$(mktemp -d) && scripts/pack-firefox.sh --stage-dir \"$STAGE\" && npx --yes web-ext lint --source-dir \"$STAGE\" && rm -rf \"$STAGE\"",
     "test": "for f in smoketests/*.js; do node \"$f\" || exit 1; done",
     "pack:chrome": "scripts/pack-chrome.sh",
     "pack:firefox": "scripts/pack-firefox.sh"

@@ -3,10 +3,10 @@
     "message": "es"
   },
   "extDescription": {
-    "message": "Gestiona tareas de Vikunja desde la barra de herramientas de tu navegador, con una lista de tareas, añadido rápido y captura de la página actual."
+    "message": "Extensión complementaria para Vikunja: captura directa de URL, editor de tareas integrado, filtros rápidos y tema oficial de Vikunja."
   },
   "cmdOpenPopup": {
-    "message": "Abrir el popup de Vikunja"
+    "message": "Abrir el popup de Vikunja Companion"
   },
   "cmdAddSite": {
     "message": "Añadir el sitio web actual como tarea"

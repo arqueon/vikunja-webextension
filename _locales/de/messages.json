@@ -3,10 +3,10 @@
     "message": "de"
   },
   "extDescription": {
-    "message": "Verwalte Vikunja-Aufgaben über deine Browser-Symbolleiste — mit Aufgabenliste, Schnellhinzufügen und Erfassen der aktuellen Seite."
+    "message": "Erweiterung für Vikunja: direkte URL-Erfassung, integrierter Aufgaben-Editor, vordefinierte Filter und Unterstützung des offiziellen Vikunja-Designs."
   },
   "cmdOpenPopup": {
-    "message": "Vikunja-Popup öffnen"
+    "message": "Vikunja Companion-Popup öffnen"
   },
   "cmdAddSite": {
     "message": "Aktuelle Website als Aufgabe hinzufügen"

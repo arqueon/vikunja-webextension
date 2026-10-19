@@ -1,14 +1,19 @@
-# Vikunja Browser Extension
+# Vikunja Companion
 
-Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar. View and
-search your tasks, add new ones with the full **Quick Add Magic** syntax, and
-capture the current page or selected text as a task — without leaving your
-browser.
+Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full task management, 1-click URL capture, inline task editing, and official Vikunja dark/light themes.
 
-[![Firefox Add-ons](https://blog.mozilla.org/addons/files/2015/11/get-the-addon.png)](https://addons.mozilla.org/firefox/addon/vikunja/) [![Chrome Web Store](https://developer.chrome.com/static/docs/webstore/branding/image/tbyBjqi7Zu733AAKA5n4.png)](https://chromewebstore.google.com/detail/vikunja/idefimhgolcfeccobnohbghohdmahedh)
+> **Note:** Vikunja Companion is an independent, enhanced fork of [dasJ/vikunja-webextension](https://github.com/dasJ/vikunja-webextension) by Janne Heß, maintained by [Rubén A. Velázquez (arqueon)](https://github.com/arqueon).
 
+## Companion Enhancements
 
-## Features
+- **Direct 1-Click URL Capture**: Dedicated capture bar with direct button to save current tab URL and title into your default project or any selected project.
+- **Hierarchical Project Tree**: Visual indenting and hierarchy support for nested projects.
+- **Quick Preset Filters**: Direct toolbar filter chips for *All*, *Due Today*, *Starred/Favorites*, and a toggle for completed tasks.
+- **Inline Task Card Editor**: Click the card edit icon to expand a rich inline editor with title, description, priority, dates, and safe 3-second countdown deletion.
+- **Official Vikunja Theme**: Full support for Vikunja's official dark (`#18191c`) and light (`#ffffff`) palettes with accent (`#196aff`) and appearance switcher (Auto / Dark / Light).
+- **AMO-Ready Packaging**: Clean Manifest V3 compliant package (`vikunja-companion@arqueonautis.org`) with zero linter errors.
+
+## Core Features
 
 - **Toolbar popup** — a searchable task list with complete/reopen checkboxes,
   due dates, labels and project tags. The Vikunja logo opens your instance, and
@@ -131,25 +136,41 @@ parses task text identically to the web app.
 Then open the options page, enter your Vikunja URL and an API token with the
 permissions listed on the page, and you are ready to go.
 
-## Packaging
+## Packaging & AMO Validation
 
-Build a Firefox `.xpi` into `dist/vikunja-firefox-<version>.xpi`:
+### Validate for Firefox Add-ons (AMO)
+
+Verify that the staged build passes Mozilla's `web-ext lint` with zero errors:
+
+```sh
+npm run lint:amo
+```
+
+### Build for Firefox
+
+Build `dist/vikunja-companion-<version>.xpi` and `dist/vikunja-companion-<version>.zip`:
 
 ```sh
 npm run pack:firefox
 ```
 
-The pack script stages only the shipped files (no `scripts/`, `smoketests/`,
-docs or previous build output) and uses the canonical Firefox `manifest.json`.
-`scripts/pack-firefox.sh --manifest-only` prints the manifest instead.
+The pack script stages only the shipped files, strips Chrome-specific fields from `manifest.json`, and outputs packages ready for upload to [addons.mozilla.org](https://addons.mozilla.org/).
 
-Build a Chrome `.zip` into `dist/vikunja-chrome-<version>.zip`:
+### Build for Chrome
+
+Build `dist/vikunja-chrome-<version>.zip`:
 
 ```sh
 npm run pack:chrome
 ```
 
-The Chrome pack reuses the same staging and drops the Firefox-only
-`background.scripts` and `browser_specific_settings` keys from the manifest
-(Chrome uses `background.service_worker`).
-`scripts/pack-chrome.sh --manifest-only` prints the Chrome manifest instead.
+The Chrome pack stages only the shipped files and drops Firefox-only `background.scripts` and `browser_specific_settings` keys from the manifest.
+
+## Publishing to Firefox Add-ons (AMO)
+
+1. Log into the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution).
+2. Choose **"On this site"** (listed on AMO).
+3. Upload `dist/vikunja-companion-1.0.0.zip` (or `.xpi`).
+4. Select category: **Productivity**.
+5. The extension does not collect any user data (`data_collection_permissions: { required: ["none"] }`).
+6. Submit for review!
