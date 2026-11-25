@@ -3,7 +3,7 @@
     "message": "de"
   },
   "extDescription": {
-    "message": "Erweiterung für Vikunja: direkte URL-Erfassung, integrierter Aufgaben-Editor, vordefinierte Filter und Unterstützung des offiziellen Vikunja-Designs."
+    "message": "Begleiterweiterung für Vikunja: URL-Erfassung mit Standardwerten, persistente Entwürfe, natives Firefox-Design (Proton), Inline-Aufgabeneditor und offizielle Vikunja-Designs."
   },
   "cmdOpenPopup": {
     "message": "Vikunja Companion-Popup öffnen"
@@ -445,5 +445,140 @@
   },
   "errRequestFailed": {
     "message": "Anfrage fehlgeschlagen mit Status $1"
+  },
+  "fieldLabels": {
+    "message": "Labels"
+  },
+  "presetAll": {
+    "message": "Alle"
+  },
+  "presetDue": {
+    "message": "Heute & Überfällig"
+  },
+  "presetFavorites": {
+    "message": "Favoriten"
+  },
+  "presetDone": {
+    "message": "Erledigt"
+  },
+  "toggleCompletedTitle": {
+    "message": "Erledigte Aufgaben ein-/ausblenden"
+  },
+  "captureBackTitle": {
+    "message": "Zurück zur Aufgabenliste"
+  },
+  "captureSaveNow": {
+    "message": "Jetzt speichern"
+  },
+  "fieldUrl": {
+    "message": "Link (URL)"
+  },
+  "fieldUrlPlaceholder": {
+    "message": "https://…"
+  },
+  "priority0": {
+    "message": "Keine Priorität"
+  },
+  "priority1": {
+    "message": "Niedrig (1)"
+  },
+  "priority2": {
+    "message": "Mittel (2)"
+  },
+  "priority3": {
+    "message": "Hoch (3)"
+  },
+  "priority4": {
+    "message": "Dringend (4)"
+  },
+  "priority5": {
+    "message": "Sofort (5)"
+  },
+  "presetToday": {
+    "message": "Heute"
+  },
+  "presetTomorrow": {
+    "message": "Morgen"
+  },
+  "presetWeekend": {
+    "message": "Wochenende"
+  },
+  "presetNextWeek": {
+    "message": "Nächste Woche"
+  },
+  "presetNoDate": {
+    "message": "Kein Datum"
+  },
+  "fieldLabelsPlaceholder": {
+    "message": "Neue oder vorhandene Labels, durch Kommas getrennt"
+  },
+  "captureHint": {
+    "message": "Strg+Enter zum Speichern · Esc zum Abbrechen"
+  },
+  "collapse": {
+    "message": "Einklappen"
+  },
+  "editTaskTitle": {
+    "message": "Aufgabendetails bearbeiten"
+  },
+  "editTitlePlaceholder": {
+    "message": "Aufgabentitel"
+  },
+  "editDescriptionPlaceholder": {
+    "message": "Beschreibung (optional)"
+  },
+  "openButton": {
+    "message": "Öffnen ↗"
+  },
+  "deleteButton": {
+    "message": "Löschen"
+  },
+  "confirmDeleteButton": {
+    "message": "Bestätigen? (3s)"
+  },
+  "taskUpdated": {
+    "message": "Aufgabe aktualisiert."
+  },
+  "taskDeleted": {
+    "message": "Aufgabe gelöscht."
+  },
+  "saveFailed": {
+    "message": "Speichern fehlgeschlagen: $1"
+  },
+  "deleteFailed": {
+    "message": "Löschen fehlgeschlagen: $1"
+  },
+  "directSaveFailed": {
+    "message": "Direktes Speichern fehlgeschlagen: $1"
+  },
+  "reloadFailed": {
+    "message": "Neuladen fehlgeschlagen: $1"
+  },
+  "createLabelTitle": {
+    "message": "Label erstellen"
+  },
+  "optionsCapture": {
+    "message": "Erfassungen aus dem Browser"
+  },
+  "hintCaptureSection": {
+    "message": "Standardwerte für aus einer Seite erfasste Aufgaben: die Toolbar-Schaltfläche, den Kontextmenü-Eintrag „Zu Vikunja hinzufügen…“ und den Shortcut Alt+Shift+V. Sie steuern auch die Schaltfläche „Jetzt speichern“ im Popup."
+  },
+  "labelCaptureProject": {
+    "message": "Projekt für erfasste Seiten"
+  },
+  "hintCaptureProject": {
+    "message": "Erfasste Seiten landen in diesem Projekt. Leer lassen, um das Standardprojekt oben zu verwenden."
+  },
+  "labelCaptureLabels": {
+    "message": "Labels für erfasste Seiten"
+  },
+  "hintCaptureLabels": {
+    "message": "Durch Kommas getrennte Labels, die jeder erfassten Seite hinzugefügt werden. Labels werden in Vikunja automatisch erstellt, falls sie noch nicht existieren. Die am häufigsten verwendeten Labels erscheinen zuerst im Erfassungsformular."
+  },
+  "sameAsDefaultProject": {
+    "message": "Wie das Standardprojekt"
+  },
+  "quickDirectSaveTitle": {
+    "message": "Sofort mit den Erfassungs-Standardeinstellungen (Projekt und Labels) speichern"
   }
 }

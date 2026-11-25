@@ -226,6 +226,32 @@ const VikunjaLib = {
     pendingCaptureMock = null;
     return content;
   },
+  // Mirrors lib/vikunja.js drafts and recent labels, backed by the same map.
+  saveDraft: async (draft) => {
+    storage.set('vikunjaDraft', draft);
+    return true;
+  },
+  loadDraft: async () => storage.get('vikunjaDraft') || null,
+  clearDraft: async () => {
+    storage.delete('vikunjaDraft');
+    return true;
+  },
+  getRecentLabels: async () => storage.get('recentLabels') || [],
+  bumpRecentLabels: async (names) => {
+    const previous = storage.get('recentLabels') || [];
+    const next = [];
+    for (const name of names || []) {
+      const value = String(name || '').trim();
+      if (!value || next.includes(value)) continue;
+      next.unshift(value);
+    }
+    for (const name of previous) {
+      if (!next.includes(name)) next.push(name);
+    }
+    const capped = next.slice(0, 6);
+    storage.set('recentLabels', capped);
+    return capped;
+  },
 };
 
 global.window = {
@@ -300,7 +326,7 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
 
   const triggerInput = () => {
     const onInput = ids['quick-title'].listeners['input'];
-    onInput[onInput.length - 1]();
+    onInput.forEach((fn) => fn());
   };
 
   const firstTask = ids['task-list'].childNodes[0];
@@ -443,19 +469,24 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(ids['capture'].hidden === false, 'plus button shows the capture view');
   assert(ids['list'].hidden === true, 'list hidden while capturing');
   assert(ids['capture-title'].value === 'Example', 'capture title prefilled from the tab, got ' + ids['capture-title'].value);
-  assert(ids['capture-description'].value === '[Example](https://example.com)', 'capture description prefilled');
+  assert(ids['capture-url'].value === 'https://example.com', 'capture URL shown in its own field, got ' + ids['capture-url'].value);
+  assert(ids['capture-url-field'].hidden === false, 'capture URL field visible for URL captures');
+  assert(ids['capture-description'].value === '', 'capture description starts empty when it only held the link, got ' + JSON.stringify(ids['capture-description'].value));
   assert(ids['capture-project'].value === '1', 'capture project defaults to first project, got ' + ids['capture-project'].value);
+  const captureDraft = storage.get('vikunjaDraft');
+  assert(captureDraft && captureDraft.capture && captureDraft.capture.title === 'Example', 'capture draft saved on open');
 
   await ids['capture-form'].listeners['submit'][0]({ preventDefault() {} });
   const lastTask = createdTasks[createdTasks.length - 1];
   assert(calls.createTask[calls.createTask.length - 1].projectId === '1', 'capture: createTask called');
   assert(calls.createTask[calls.createTask.length - 1].data.title === 'Example', 'capture: body title');
-  assert(calls.createTask[calls.createTask.length - 1].data.description === '[Example](https://example.com)', 'capture: body description');
+  assert(calls.createTask[calls.createTask.length - 1].data.description === '[Example](https://example.com)', 'capture: description rebuilt as a markdown link from the URL field');
   const captureToastLink = ids['toast'].childNodes.find((c) => c.textContent === String(lastTask.id));
   assert(captureToastLink && captureToastLink.href === 'https://try.vikunja.io/tasks/' + lastTask.id, 'capture: success toast links to the new task');
   assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'capture: add returns to the list');
   assert(ids['task-list'].childNodes[ids['task-list'].childNodes.length - 1].classList.contains('task--new'), 'capture: new task row animated in');
   assert(storage.get('lastProjectId') === 1, 'capture: lastProjectId persisted');
+  assert(storage.get('vikunjaDraft') === undefined, 'capture: draft cleared after submit');
 
   // Cancel returns to the list without creating anything.
   await addSite();
@@ -463,6 +494,7 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   ids['capture-cancel'].listeners['click'][0]();
   assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'cancel returns to the list');
   assert(calls.createTask.length === createBefore, 'cancel creates nothing');
+  assert(!((storage.get('vikunjaDraft') || {}).capture), 'cancel discards the capture draft');
 
   // Empty title keeps the user in the capture view with an inline error.
   await addSite();
@@ -479,9 +511,39 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   await new Promise((r) => { setTimeout(r, 20); });
   assert(ids['capture'].hidden === false, 'pending capture opens the capture view');
   assert(ids['capture-title'].value === 'From window', 'pending capture title prefilled');
+  assert(ids['capture-url'].value === 'https://x.example', 'pending capture URL prefilled');
   assert(ids['capture-description'].value === 'Body', 'pending capture description prefilled');
   ids['capture-cancel'].listeners['click'][0]();
   assert(ids['capture'].hidden === true && ids['list'].hidden === false, 'capture: window content returns to the list');
+
+  // --- Quick-add draft survives a popup teardown (focus loss) ---
+  storage.delete('vikunjaDraft');
+  ids['quick-title'].value = 'draft me *focus +Work';
+  triggerInput();
+  assert((storage.get('vikunjaDraft') || {}).quickTitle === 'draft me *focus +Work', 'quick-add draft saved on every input');
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['quick-title'].value === 'draft me *focus +Work', 'quick-add draft restored after reopen, got ' + JSON.stringify(ids['quick-title'].value));
+
+  // --- Capture defaults from the options (project + labels) flow through ---
+  // eval(src) re-runs the popup, so use the freshly registered listeners.
+  const lastListener = (id, type) => {
+    const l = ids[id].listeners[type];
+    return l[l.length - 1];
+  };
+  VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '', sortBy: 'created', rememberLastSort: false, captureProjectId: 2, captureLabels: 'readlater, research' });
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  await lastListener('add-site', 'click')();
+  assert(ids['capture-project'].value === '2', 'capture honors the dedicated capture project, got ' + ids['capture-project'].value);
+  assert(ids['capture-labels-input'].value === 'readlater, research', 'capture pre-fills the configured labels, got ' + JSON.stringify(ids['capture-labels-input'].value));
+  await lastListener('capture-form', 'submit')({ preventDefault() {} });
+  assert(magicCalls.addLabelToTask.length >= 2, 'capture labels attached to the created task');
+  assert((storage.get('recentLabels') || []).includes('readlater'), 'used labels promoted to recent');
+
+  // Clean up so the next section starts from an empty quick-add.
+  storage.delete('vikunjaDraft');
+  ids['quick-title'].value = '';
 
   // --- View switcher: favorited saved filters as views ---
   VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '', sortBy: 'created', rememberLastSort: false });
@@ -558,6 +620,7 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   quickAddModeMock = 'vikunja';
   VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '' });
   storage.set('lastProjectId', null);
+  storage.delete('vikunjaDraft');
   ids['quick-title'].value = '';
   eval(src);
   await new Promise((r) => { setTimeout(r, 20); });

@@ -69,7 +69,7 @@ const VikunjaLib = {
   },
   normalizeBaseUrl: (u) => (u ? u.replace(/\/+$/, '') : ''),
   getConfig: () => Promise.resolve({ baseUrl: 'https://try.vikunja.io', token: 'tk_test' }),
-  getPrefs: () => Promise.resolve({ defaultProjectId: 1, dueToday: true, customFilter: 'priority >= 1', sortBy: 'due_date', rememberLastSort: true, elementReactAfterAdd: true, elementTag: 'from-element' }),
+  getPrefs: () => Promise.resolve({ defaultProjectId: 1, dueToday: true, customFilter: 'priority >= 1', sortBy: 'due_date', rememberLastSort: true, elementReactAfterAdd: true, elementTag: 'from-element', captureProjectId: 2, captureLabels: 'readlater, research' }),
   listProjects: () => Promise.resolve(projects),
   listTasks: () => Promise.resolve([]),
   createTask: (projectId, body) => { calls.createTask.push({ projectId, body }); return Promise.resolve({ id: 1 }); },
@@ -124,8 +124,12 @@ const root = path.join(__dirname, '..');
   assert(ids['remember-last-sort'].checked === true, 'options: remember-last-sort checked');
   assert(ids['element-react-after-add'].checked === true, 'options: element-react-after-add checked');
   assert(ids['element-tag'].value === 'from-element', 'options: element-tag filled, got ' + ids['element-tag'].value);
+  assert(ids['capture-labels'].value === 'readlater, research', 'options: capture labels filled, got ' + JSON.stringify(ids['capture-labels'].value));
   assert(ids['default-project'].options.length === 3, 'options: default-project select filled');
   assert(ids['default-project'].options.every((o) => !o.value || Number(o.value) > 0), 'options: default-project select excludes pseudo-projects, got ' + JSON.stringify(ids['default-project'].options.map((o) => o.value)));
+  assert(ids['capture-project'].options.length === 3, 'options: capture-project select filled');
+  assert(ids['capture-project'].options[0].value === '' && !ids['capture-project'].options[0].disabled, 'options: capture-project starts with an enabled "same as default" choice');
+  assert(String(ids['capture-project'].value) === '2', 'options: capture project prefilled, got ' + JSON.stringify(ids['capture-project'].value));
 
   ids['base-url'].value = 'https://try.vikunja.io/';
   ids['token'].value = 'tk_test';
@@ -138,6 +142,8 @@ const root = path.join(__dirname, '..');
   assert(calls.syncSet[0].rememberLastSort === true, 'options: remember-last-sort preserved');
   assert(calls.syncSet[0].elementReactAfterAdd === true, 'options: element-react-after-add preserved');
   assert(calls.syncSet[0].elementTag === 'from-element', 'options: element-tag preserved');
+  assert(String(calls.syncSet[0].captureProjectId) === '2', 'options: capture project preserved, got ' + JSON.stringify(calls.syncSet[0].captureProjectId));
+  assert(calls.syncSet[0].captureLabels === 'readlater, research', 'options: capture labels preserved');
   assert(calls.hostRequest.length === 1, 'options: save requests host permissions');
   assert(calls.hostRequest[0].length === 1 && calls.hostRequest[0][0] === 'https://try.vikunja.io/*', 'options: save requests all host patterns');
   assert(document.body.className.includes('chrome'), 'options: chrome context marks the page');

@@ -3,7 +3,7 @@
     "message": "ru"
   },
   "extDescription": {
-    "message": "Расширение для Vikunja: быстрый захват URL, встроенный редактор задач, фильтры и поддержка официальной темы Vikunja."
+    "message": "Расширение-компаньон для Vikunja: захват URL с настройками по умолчанию, сохранение черновиков, нативный дизайн Firefox (Proton), встроенный редактор задач и официальные темы Vikunja."
   },
   "cmdOpenPopup": {
     "message": "Открыть попап Vikunja Companion"
@@ -445,5 +445,140 @@
   },
   "errRequestFailed": {
     "message": "Запрос не удался со статусом $1"
+  },
+  "fieldLabels": {
+    "message": "Метки"
+  },
+  "presetAll": {
+    "message": "Все"
+  },
+  "presetDue": {
+    "message": "Сегодня и просроченные"
+  },
+  "presetFavorites": {
+    "message": "Избранные"
+  },
+  "presetDone": {
+    "message": "Готово"
+  },
+  "toggleCompletedTitle": {
+    "message": "Показать или скрыть выполненные задачи"
+  },
+  "captureBackTitle": {
+    "message": "Вернуться к списку задач"
+  },
+  "captureSaveNow": {
+    "message": "Сохранить сейчас"
+  },
+  "fieldUrl": {
+    "message": "Ссылка (URL)"
+  },
+  "fieldUrlPlaceholder": {
+    "message": "https://…"
+  },
+  "priority0": {
+    "message": "Без приоритета"
+  },
+  "priority1": {
+    "message": "Низкий (1)"
+  },
+  "priority2": {
+    "message": "Средний (2)"
+  },
+  "priority3": {
+    "message": "Высокий (3)"
+  },
+  "priority4": {
+    "message": "Срочный (4)"
+  },
+  "priority5": {
+    "message": "Сделать сейчас (5)"
+  },
+  "presetToday": {
+    "message": "Сегодня"
+  },
+  "presetTomorrow": {
+    "message": "Завтра"
+  },
+  "presetWeekend": {
+    "message": "Выходные"
+  },
+  "presetNextWeek": {
+    "message": "На следующей неделе"
+  },
+  "presetNoDate": {
+    "message": "Без даты"
+  },
+  "fieldLabelsPlaceholder": {
+    "message": "Новые или существующие метки через запятую"
+  },
+  "captureHint": {
+    "message": "Ctrl+Enter — сохранить · Esc — отмена"
+  },
+  "collapse": {
+    "message": "Свернуть"
+  },
+  "editTaskTitle": {
+    "message": "Изменить данные задачи"
+  },
+  "editTitlePlaceholder": {
+    "message": "Название задачи"
+  },
+  "editDescriptionPlaceholder": {
+    "message": "Описание (необязательно)"
+  },
+  "openButton": {
+    "message": "Открыть ↗"
+  },
+  "deleteButton": {
+    "message": "Удалить"
+  },
+  "confirmDeleteButton": {
+    "message": "Подтвердить? (3с)"
+  },
+  "taskUpdated": {
+    "message": "Задача обновлена."
+  },
+  "taskDeleted": {
+    "message": "Задача удалена."
+  },
+  "saveFailed": {
+    "message": "Не удалось сохранить: $1"
+  },
+  "deleteFailed": {
+    "message": "Не удалось удалить: $1"
+  },
+  "directSaveFailed": {
+    "message": "Не удалось сохранить напрямую: $1"
+  },
+  "reloadFailed": {
+    "message": "Не удалось обновить: $1"
+  },
+  "createLabelTitle": {
+    "message": "Создать метку"
+  },
+  "optionsCapture": {
+    "message": "Захват из браузера"
+  },
+  "hintCaptureSection": {
+    "message": "Настройки по умолчанию для задач, захваченных со страницы: кнопка на панели, пункт контекстного меню «Добавить в Vikunja…» и сочетание Alt+Shift+V. Они также управляют кнопкой «Сохранить сейчас» во всплывающем окне."
+  },
+  "labelCaptureProject": {
+    "message": "Проект для захваченных страниц"
+  },
+  "hintCaptureProject": {
+    "message": "Захваченные страницы попадают в этот проект. Оставьте пустым, чтобы использовать проект по умолчанию выше."
+  },
+  "labelCaptureLabels": {
+    "message": "Метки для захваченных страниц"
+  },
+  "hintCaptureLabels": {
+    "message": "Метки через запятую, добавляемые к каждой захваченной странице. Метки создаются в Vikunja автоматически, если их ещё нет. Самые используемые метки появляются в форме захвата первыми."
+  },
+  "sameAsDefaultProject": {
+    "message": "Как проект по умолчанию"
+  },
+  "quickDirectSaveTitle": {
+    "message": "Сохранить сразу с настройками захвата (проект и метки)"
   }
 }

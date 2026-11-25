@@ -24,6 +24,8 @@
   const urlInput = document.getElementById('base-url');
   const tokenInput = document.getElementById('token');
   const defaultProjectSelect = document.getElementById('default-project');
+  const captureProjectSelect = document.getElementById('capture-project');
+  const captureLabelsInput = document.getElementById('capture-labels');
   const dueTodayInput = document.getElementById('due-today');
   const themeInput = document.getElementById('theme');
   const customFilterInput = document.getElementById('custom-filter');
@@ -84,6 +86,8 @@
       elementReactAfterAdd: elementReactAfterAddInput.checked,
       elementTag: elementTagInput.value.trim(),
       theme: themeInput ? themeInput.value : 'auto',
+      captureProjectId: (captureProjectSelect && captureProjectSelect.value) || null,
+      captureLabels: (captureLabelsInput && captureLabelsInput.value.trim()) || '',
     };
   }
 
@@ -111,6 +115,16 @@
     });
   }
 
+  function fillCaptureProjectSelect(selected) {
+    if (!captureProjectSelect) return;
+    uiFillProjectSelect(captureProjectSelect, projects.filter((p) => p.id > 0), {
+      selectedId: selected,
+      placeholder: t('sameAsDefaultProject', 'Same as the default project'),
+      placeholderDisabled: false,
+      fallbackToFirst: false,
+    });
+  }
+
   async function init() {
     const [config, prefs, instances] = await Promise.all([getConfig(), getPrefs(), getElementInstances()]);
     urlInput.value = config.baseUrl;
@@ -125,6 +139,9 @@
     rememberLastSortInput.checked = prefs.rememberLastSort;
     elementReactAfterAddInput.checked = Boolean(prefs.elementReactAfterAdd);
     elementTagInput.value = prefs.elementTag || '';
+    if (captureLabelsInput) {
+      captureLabelsInput.value = prefs.captureLabels || '';
+    }
     elementInstances = instances;
     renderElementInstances();
     if (config.baseUrl && config.token) {
@@ -134,6 +151,7 @@
         projects = [];
       }
       fillProjectSelect(prefs.defaultProjectId);
+      fillCaptureProjectSelect(prefs.captureProjectId);
     }
   }
 
@@ -179,6 +197,7 @@
       try {
         projects = await listProjects({ forceRefresh: true });
         fillProjectSelect(config.defaultProjectId);
+        fillCaptureProjectSelect(config.captureProjectId);
       } catch (e) {
         showStatus(t('connectedNoProjects', 'Connected, but could not load projects: $1', [e.message]), 'error');
       }

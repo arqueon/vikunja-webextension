@@ -91,20 +91,20 @@
       <div class="preset-chips">
         <button type="button" class="preset-chip active" data-preset="all">
           <svg class="preset-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"></path></svg>
-          <span>All</span>
+          <span data-i18n="presetAll">All</span>
         </button>
         <button type="button" class="preset-chip" data-preset="due">
           <svg class="preset-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
-          <span>Today &amp; Overdue</span>
+          <span data-i18n="presetDue">Today &amp; Overdue</span>
         </button>
         <button type="button" class="preset-chip" data-preset="favorites">
           <svg class="preset-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-          <span>Favorites</span>
+          <span data-i18n="presetFavorites">Favorites</span>
         </button>
       </div>
-      <button type="button" id="toggle-completed" class="icon-toggle-btn" title="Toggle completed tasks" aria-pressed="false">
+      <button type="button" id="toggle-completed" class="icon-toggle-btn" title="Toggle completed tasks" aria-pressed="false" data-i18n-title="toggleCompletedTitle">
         <svg class="toggle-icon-svg" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
-        <span class="toggle-label">Done</span>
+        <span class="toggle-label" data-i18n="presetDone">Done</span>
       </button>
     </div>
     <ul id="task-list" class="task-list"></ul>
@@ -131,14 +131,32 @@
 
   <section id="capture" class="view" hidden>
     <div class="capture-header-row">
+      <button type="button" id="capture-back" class="icon-btn" title="Back to the task list" aria-label="Back to the task list" data-i18n-title="captureBackTitle" data-i18n-aria-label="captureBackTitle">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+      </button>
       <h2 class="capture-title" data-i18n="captureTitle">Add task to Vikunja</h2>
-      <button type="button" id="capture-direct-add" class="secondary" title="Save directly with current tab info and default project" data-i18n-title="quickDirectSaveTitle">⚡ Direct Save</button>
+      <button type="button" id="capture-direct-add" class="btn-chip" title="Save directly with current tab info and default project" data-i18n-title="quickDirectSaveTitle">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polyline></svg>
+        <span data-i18n="captureSaveNow">Save now</span>
+      </button>
     </div>
     <form id="capture-form" class="capture-form">
       <label class="field">
         <span class="label" data-i18n="fieldTitle">Title</span>
         <input type="text" id="capture-title" name="title" maxlength="500" autocomplete="off" spellcheck="false" required />
       </label>
+      <div class="field" id="capture-url-field" hidden>
+        <span class="label" data-i18n="fieldUrl">Link (URL)</span>
+        <div class="url-row">
+          <svg class="url-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+            <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+          </svg>
+          <input type="url" id="capture-url" name="url" placeholder="https://…" autocomplete="off" spellcheck="false" aria-label="Link (URL)" data-i18n-placeholder="fieldUrlPlaceholder" data-i18n-aria-label="fieldUrl" />
+        </div>
+      </div>
       <label class="field">
         <span class="label" data-i18n="fieldProject">Project</span>
         <select id="capture-project"></select>
@@ -147,12 +165,12 @@
         <label class="field field-half">
           <span class="label" data-i18n="fieldPriority">Priority</span>
           <select id="capture-priority">
-            <option value="0">No priority</option>
-            <option value="1">Low (1)</option>
-            <option value="2">Medium (2)</option>
-            <option value="3">High (3)</option>
-            <option value="4">Urgent (4)</option>
-            <option value="5">Do now (5)</option>
+            <option value="0" data-i18n="priority0">No priority</option>
+            <option value="1" data-i18n="priority1">Low (1)</option>
+            <option value="2" data-i18n="priority2">Medium (2)</option>
+            <option value="3" data-i18n="priority3">High (3)</option>
+            <option value="4" data-i18n="priority4">Urgent (4)</option>
+            <option value="5" data-i18n="priority5">Do now (5)</option>
           </select>
         </label>
         <label class="field field-half">
@@ -161,17 +179,23 @@
         </label>
       </div>
       <div class="date-presets-row">
-        <button type="button" class="preset-btn" data-preset="today">Today</button>
-        <button type="button" class="preset-btn" data-preset="tomorrow">Tomorrow</button>
-        <button type="button" class="preset-btn" data-preset="weekend">Weekend</button>
-        <button type="button" class="preset-btn" data-preset="nextweek">Next week</button>
-        <button type="button" class="preset-btn" data-preset="clear">No date</button>
+        <button type="button" class="preset-btn" data-preset="today" data-i18n="presetToday">Today</button>
+        <button type="button" class="preset-btn" data-preset="tomorrow" data-i18n="presetTomorrow">Tomorrow</button>
+        <button type="button" class="preset-btn" data-preset="weekend" data-i18n="presetWeekend">Weekend</button>
+        <button type="button" class="preset-btn" data-preset="nextweek" data-i18n="presetNextWeek">Next week</button>
+        <button type="button" class="preset-btn" data-preset="clear" data-i18n="presetNoDate">No date</button>
       </div>
-      <label class="field">
-        <span class="label" data-i18n="fieldLabels">Labels (comma-separated or select below)</span>
-        <input type="text" id="capture-labels-input" placeholder="e.g. readlater, research" autocomplete="off" />
+      <div class="field">
+        <span class="label" data-i18n="fieldLabels">Labels</span>
         <div id="capture-labels-chips" class="labels-cloud"></div>
-      </label>
+        <input
+          type="text"
+          id="capture-labels-input"
+          placeholder="New or existing labels, comma-separated"
+          autocomplete="off"
+          data-i18n-placeholder="fieldLabelsPlaceholder"
+        />
+      </div>
       <label class="field">
         <span class="label" data-i18n="fieldDescription">Description (optional)</span>
         <textarea id="capture-description" name="description" rows="3" spellcheck="false"></textarea>
@@ -181,6 +205,7 @@
         <button type="button" id="capture-cancel" class="secondary" data-i18n="cancelButton">Cancel</button>
         <button type="submit" id="capture-add" class="primary" data-i18n="addTaskButton">Add task</button>
       </div>
+      <p class="capture-hint" data-i18n="captureHint">Ctrl+Enter to save · Esc to cancel</p>
     </form>
   </section>
 

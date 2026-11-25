@@ -6,11 +6,15 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 
 ## Companion Enhancements
 
-- **Direct 1-Click URL Capture**: Dedicated capture bar with direct button to save current tab URL and title into your default project or any selected project.
+- **Direct 1-Click URL Capture**: Dedicated capture bar with a *Save now* button that files the current tab into your capture defaults (project and labels), configurable in the options.
+- **Native Firefox (Proton) design**: The popup, capture form and options page follow Firefox's Proton design language — panel-matched backgrounds, 4px radii, menu-like task rows, ghost toolbar buttons — in both light and dark, keeping Vikunja blue as the accent.
+- **Persistent drafts**: Anything typed into the quick-add or the capture form is mirrored to session storage on every keystroke and restored when the popup reopens, so losing the popup's focus never loses your text. A successful submit (or an explicit cancel) clears the draft.
+- **Capture defaults for pipelines**: A dedicated options section sets the project and the automatic labels for pages captured from the browser (toolbar button, context menu, `Alt+Shift+V`). Labels are created on demand, and the labels you use most surface first in the capture form.
+- **Visible, editable link field**: Captured URLs now show in their own field instead of being buried in the description; the markdown link Vikunja expects is rebuilt at submit time.
 - **Hierarchical Project Tree**: Visual indenting and hierarchy support for nested projects.
 - **Quick Preset Filters**: Direct toolbar filter chips for *All*, *Due Today*, *Starred/Favorites*, and a toggle for completed tasks.
 - **Inline Task Card Editor**: Click the card edit icon to expand a rich inline editor with title, description, priority, dates, and safe 3-second countdown deletion.
-- **Official Vikunja Theme**: Full support for Vikunja's official dark (`#18191c`) and light (`#ffffff`) palettes with accent (`#196aff`) and appearance switcher (Auto / Dark / Light).
+- **Official Vikunja Theme**: Full support for Vikunja's official dark and light palettes with accent (`#196aff`) and appearance switcher (Auto / Dark / Light).
 - **AMO-Ready Packaging**: Clean Manifest V3 compliant package (`vikunja-companion@arqueonautis.org`) with zero linter errors.
 
 ## Core Features
@@ -32,12 +36,15 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 - **Capture current page** — add the current tab, a selection or a link as a
   task via the plus button, the right-click menu ("Add to Vikunja…") or the
   `Alt+Shift+V` shortcut, then refine it right in the popup before saving. The
-  context menu and shortcut open the popup with the captured content already
-  filled in.
+  link shows in its own field (still written to the description as a markdown
+  link), the project and labels default to your capture settings, and the
+  labels you use most appear first as one-click chips. `Ctrl+Enter` saves,
+  `Esc` goes back.
 - **Options page** — configure your instance URL, API token (with the required
   permissions documented on the page), default project, "due today" default, a
   custom filter for the task list, the default sort order and whether to
-  remember your last sort choice.
+  remember your last sort choice, plus a dedicated *Captures from the
+  browser* section (project and automatic labels for captured pages).
 - **Sorting** — a sort button in the popup header opens a menu to order the
   task list by Vikunja's manual position, title, created, updated, due date or
   priority, each of which can be reversed (ascending/descending). Newly added
@@ -59,7 +66,7 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 
 ## Language
 
-The extension ships in **English**, **German** and **Spanish**. The language is chosen from
+The extension ships in **English**, **German**, **Spanish** and **Russian**. The language is chosen from
 your browser's UI language (English is the fallback), so no in-extension setting
 is needed. The Quick Add Magic syntax stays English by design: its project,
 label, priority, date and repeat tokens (`+`, `*`, `!`, `@`, `tomorrow`,
@@ -170,7 +177,7 @@ The Chrome pack stages only the shipped files and drops Firefox-only `background
 
 1. Log into the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution).
 2. Choose **"On this site"** (listed on AMO).
-3. Upload `dist/vikunja-companion-1.0.0.zip` (or `.xpi`).
+3. Upload `dist/vikunja-companion-1.1.0.zip` (or `.xpi`).
 4. Select category: **Productivity**.
 5. The extension does not collect any user data (`data_collection_permissions: { required: ["none"] }`).
 6. Submit for review!

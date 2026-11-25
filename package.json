@@ -1,8 +1,8 @@
 {
   "name": "vikunja-companion",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
-  "description": "Companion extension for Vikunja: direct URL capture, inline task editor, preset filters, and official Vikunja theme support.",
+  "description": "Companion extension for Vikunja: URL capture with pipeline defaults, persistent drafts, native Firefox (Proton) design, inline task editor, and official Vikunja theme support.",
   "author": "Rubén A. Velázquez <ruben@arqueonautis.org>",
   "homepage": "https://github.com/arqueon/vikunja-webextension",
   "license": "AGPL-3.0-or-later",

@@ -1,12 +1,9 @@
-h2 {
-  margin: 2.25rem 0 0;
-  font-size: 1rem;
-  border-top: 1px solid var(--border);
-  padding-top: 1.5rem;
-}
+/* Options page on the Proton tokens from styles/common.css: flat sections
+   with hairline separators, like about:preferences, instead of boxed cards. */
 
 body {
-  padding: 1.25rem;
+  padding: 1.25rem 1.5rem;
+  max-width: 40rem;
 }
 
 /* Chrome sizes its embedded options dialog from the html/body width (no
@@ -18,6 +15,14 @@ body.chrome {
   min-width: 48rem;
 }
 
+h2 {
+  margin: 1.75rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  border-top: 1px solid var(--border-subtle);
+  padding-top: 1.25rem;
+}
+
 h2:first-of-type {
   border-top: none;
   margin-top: 0;
@@ -25,15 +30,16 @@ h2:first-of-type {
 }
 
 #integrations {
-  margin-top: 2.25rem;
-  padding-top: 1.5rem;
-  border-top: 1px solid var(--border);
+  margin-top: 1.75rem;
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--border-subtle);
 }
 
 label {
   display: block;
   font-weight: 600;
-  margin: 1.25rem 0 0.35rem;
+  font-size: 0.8125rem;
+  margin: 1rem 0 0.35rem;
 }
 
 label.checkbox {
@@ -41,25 +47,26 @@ label.checkbox {
   align-items: center;
   gap: 0.5rem;
   font-weight: 600;
-  margin-top: 1.5rem;
+  margin-top: 1.1rem;
 }
 
 label.checkbox input[type="checkbox"] {
   width: 16px;
   height: 16px;
+  margin: 0;
 }
 
 input[type="url"],
 input[type="password"],
 input[type="text"],
 select {
-  padding: 0.6rem 0.75rem;
-  font-size: 0.95rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8125rem;
 }
 
 .hint {
   margin: 0.3rem 0 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -70,7 +77,7 @@ select {
 ul.permissions {
   margin: 0.3rem 0 0;
   padding-left: 1.1rem;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   color: var(--muted);
 }
 
@@ -80,22 +87,27 @@ ul.permissions li {
 
 ul.permissions code,
 .hint code {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   background: var(--surface-alt);
   color: var(--ink);
-  border-radius: 4px;
+  border-radius: var(--radius);
   padding: 0.05rem 0.3rem;
 }
 
 .actions {
   display: flex;
-  gap: 0.75rem;
-  margin-top: 1.75rem;
+  gap: 0.5rem;
+  margin-top: 1.5rem;
 }
 
 button {
-  padding: 0.6rem 1.25rem;
-  font-size: 0.95rem;
+  padding: 0.5rem 1.1rem;
+  font-size: 0.8125rem;
+}
+
+.actions button,
+#integrations .actions button {
+  width: auto;
 }
 
 button#save {
@@ -109,25 +121,25 @@ button#save:hover {
 
 .status {
   margin-top: 1.25rem;
-  padding: 0.6rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.9rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: var(--radius-lg);
+  font-size: 0.8125rem;
 }
 
 .status.ok {
-  background: rgba(34, 197, 94, 0.15);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
   color: var(--ok);
 }
 
 .status.error {
-  background: rgba(220, 38, 38, 0.15);
+  background: color-mix(in srgb, var(--err) 12%, transparent);
   color: var(--err);
 }
 
 .instances {
   list-style: none;
   padding: 0;
-  margin: 1rem 0 0;
+  margin: 0.75rem 0 0;
 }
 
 .instances li {
@@ -135,10 +147,14 @@ button#save:hover {
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 0.6rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  margin-bottom: 0.5rem;
+}
+
+.instances li:hover {
+  background: var(--surface-hover);
 }
 
 .instances li .url {
@@ -149,11 +165,11 @@ button#save:hover {
 
 .instances li button {
   flex: 0 0 auto;
-  padding: 0.4rem 0.9rem;
+  padding: 0.35rem 0.9rem;
 }
 
 .badge {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.03em;
@@ -163,22 +179,22 @@ button#save:hover {
 }
 
 .badge.granted {
-  background: rgba(34, 197, 94, 0.15);
+  background: color-mix(in srgb, var(--ok) 14%, transparent);
   color: var(--ok);
 }
 
 .badge.missing {
-  background: rgba(249, 115, 22, 0.15);
+  background: color-mix(in srgb, var(--orange) 14%, transparent);
   color: var(--orange);
 }
 
 dialog#element-dialog {
   border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 1.25rem;
+  border-radius: var(--radius-lg);
+  padding: 1.1rem;
   background: var(--surface);
   color: var(--ink);
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--shadow-md);
   width: min(420px, calc(100vw - 2rem));
 }
 
@@ -188,10 +204,11 @@ dialog#element-dialog::backdrop {
 
 dialog#element-dialog h3 {
   margin: 0 0 0.25rem;
+  font-size: 0.9375rem;
 }
 
 dialog#element-dialog .actions {
-  margin-top: 1.25rem;
+  margin-top: 1.1rem;
 }
 
 dialog#element-dialog .actions button#element-add {

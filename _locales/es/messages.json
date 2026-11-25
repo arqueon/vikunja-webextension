@@ -3,7 +3,7 @@
     "message": "es"
   },
   "extDescription": {
-    "message": "Extensión complementaria para Vikunja: captura directa de URL, editor de tareas integrado, filtros rápidos y tema oficial de Vikunja."
+    "message": "Extensión compañera de Vikunja: captura de URLs con valores por defecto, borradores persistentes, diseño nativo de Firefox (Proton), editor de tareas en línea y temas oficiales de Vikunja."
   },
   "cmdOpenPopup": {
     "message": "Abrir el popup de Vikunja Companion"
@@ -445,5 +445,140 @@
   },
   "errRequestFailed": {
     "message": "La solicitud falló con el estado $1"
+  },
+  "fieldLabels": {
+    "message": "Etiquetas"
+  },
+  "presetAll": {
+    "message": "Todas"
+  },
+  "presetDue": {
+    "message": "Hoy y vencidas"
+  },
+  "presetFavorites": {
+    "message": "Favoritas"
+  },
+  "presetDone": {
+    "message": "Hechas"
+  },
+  "toggleCompletedTitle": {
+    "message": "Mostrar u ocultar tareas completadas"
+  },
+  "captureBackTitle": {
+    "message": "Volver a la lista de tareas"
+  },
+  "captureSaveNow": {
+    "message": "Guardar ya"
+  },
+  "fieldUrl": {
+    "message": "Enlace (URL)"
+  },
+  "fieldUrlPlaceholder": {
+    "message": "https://…"
+  },
+  "priority0": {
+    "message": "Sin prioridad"
+  },
+  "priority1": {
+    "message": "Baja (1)"
+  },
+  "priority2": {
+    "message": "Media (2)"
+  },
+  "priority3": {
+    "message": "Alta (3)"
+  },
+  "priority4": {
+    "message": "Urgente (4)"
+  },
+  "priority5": {
+    "message": "Hacer ya (5)"
+  },
+  "presetToday": {
+    "message": "Hoy"
+  },
+  "presetTomorrow": {
+    "message": "Mañana"
+  },
+  "presetWeekend": {
+    "message": "Fin de semana"
+  },
+  "presetNextWeek": {
+    "message": "Próxima semana"
+  },
+  "presetNoDate": {
+    "message": "Sin fecha"
+  },
+  "fieldLabelsPlaceholder": {
+    "message": "Etiquetas nuevas o existentes, separadas por comas"
+  },
+  "captureHint": {
+    "message": "Ctrl+Enter para guardar · Esc para cancelar"
+  },
+  "collapse": {
+    "message": "Plegar"
+  },
+  "editTaskTitle": {
+    "message": "Editar detalles de la tarea"
+  },
+  "editTitlePlaceholder": {
+    "message": "Título de la tarea"
+  },
+  "editDescriptionPlaceholder": {
+    "message": "Descripción (opcional)"
+  },
+  "openButton": {
+    "message": "Abrir ↗"
+  },
+  "deleteButton": {
+    "message": "Eliminar"
+  },
+  "confirmDeleteButton": {
+    "message": "¿Confirmar? (3s)"
+  },
+  "taskUpdated": {
+    "message": "Tarea actualizada."
+  },
+  "taskDeleted": {
+    "message": "Tarea eliminada."
+  },
+  "saveFailed": {
+    "message": "Error al guardar: $1"
+  },
+  "deleteFailed": {
+    "message": "Error al eliminar: $1"
+  },
+  "directSaveFailed": {
+    "message": "Guardado directo fallido: $1"
+  },
+  "reloadFailed": {
+    "message": "Error al recargar: $1"
+  },
+  "createLabelTitle": {
+    "message": "Crear etiqueta"
+  },
+  "optionsCapture": {
+    "message": "Capturas desde el navegador"
+  },
+  "hintCaptureSection": {
+    "message": "Valores por defecto para las tareas capturadas desde una página: el botón de la barra, la entrada del menú contextual «Añadir a Vikunja…» y el atajo Alt+Shift+V. También alimentan el botón «Guardar ya» del popup."
+  },
+  "labelCaptureProject": {
+    "message": "Proyecto para las páginas capturadas"
+  },
+  "hintCaptureProject": {
+    "message": "Las páginas capturadas van a este proyecto. Déjalo vacío para usar el proyecto por defecto de arriba."
+  },
+  "labelCaptureLabels": {
+    "message": "Etiquetas para las páginas capturadas"
+  },
+  "hintCaptureLabels": {
+    "message": "Etiquetas separadas por comas que se añaden a cada página capturada. Se crean en Vikunja automáticamente si no existen. Las etiquetas que más uses aparecen primero en el formulario de captura."
+  },
+  "sameAsDefaultProject": {
+    "message": "El mismo que el proyecto por defecto"
+  },
+  "quickDirectSaveTitle": {
+    "message": "Guardar de inmediato con los valores de captura (proyecto y etiquetas)"
   }
 }

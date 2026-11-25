@@ -3,7 +3,7 @@
     "message": "en"
   },
   "extDescription": {
-    "message": "Companion extension for Vikunja: direct URL capture, inline task editor, preset filters, and official Vikunja theme support."
+    "message": "Companion extension for Vikunja: URL capture with pipeline defaults, persistent drafts, native Firefox (Proton) design, inline task editor, and official Vikunja theme support."
   },
   "cmdOpenPopup": {
     "message": "Open the Vikunja Companion popup"
@@ -445,5 +445,140 @@
   },
   "errRequestFailed": {
     "message": "Request failed with status $1"
+  },
+  "fieldLabels": {
+    "message": "Labels"
+  },
+  "presetAll": {
+    "message": "All"
+  },
+  "presetDue": {
+    "message": "Today & Overdue"
+  },
+  "presetFavorites": {
+    "message": "Favorites"
+  },
+  "presetDone": {
+    "message": "Done"
+  },
+  "toggleCompletedTitle": {
+    "message": "Toggle completed tasks"
+  },
+  "captureBackTitle": {
+    "message": "Back to the task list"
+  },
+  "captureSaveNow": {
+    "message": "Save now"
+  },
+  "fieldUrl": {
+    "message": "Link (URL)"
+  },
+  "fieldUrlPlaceholder": {
+    "message": "https://…"
+  },
+  "priority0": {
+    "message": "No priority"
+  },
+  "priority1": {
+    "message": "Low (1)"
+  },
+  "priority2": {
+    "message": "Medium (2)"
+  },
+  "priority3": {
+    "message": "High (3)"
+  },
+  "priority4": {
+    "message": "Urgent (4)"
+  },
+  "priority5": {
+    "message": "Do now (5)"
+  },
+  "presetToday": {
+    "message": "Today"
+  },
+  "presetTomorrow": {
+    "message": "Tomorrow"
+  },
+  "presetWeekend": {
+    "message": "Weekend"
+  },
+  "presetNextWeek": {
+    "message": "Next week"
+  },
+  "presetNoDate": {
+    "message": "No date"
+  },
+  "fieldLabelsPlaceholder": {
+    "message": "New or existing labels, comma-separated"
+  },
+  "captureHint": {
+    "message": "Ctrl+Enter to save · Esc to cancel"
+  },
+  "collapse": {
+    "message": "Collapse"
+  },
+  "editTaskTitle": {
+    "message": "Edit task details"
+  },
+  "editTitlePlaceholder": {
+    "message": "Task title"
+  },
+  "editDescriptionPlaceholder": {
+    "message": "Description (optional)"
+  },
+  "openButton": {
+    "message": "Open ↗"
+  },
+  "deleteButton": {
+    "message": "Delete"
+  },
+  "confirmDeleteButton": {
+    "message": "Confirm? (3s)"
+  },
+  "taskUpdated": {
+    "message": "Task updated."
+  },
+  "taskDeleted": {
+    "message": "Task deleted."
+  },
+  "saveFailed": {
+    "message": "Save failed: $1"
+  },
+  "deleteFailed": {
+    "message": "Delete failed: $1"
+  },
+  "directSaveFailed": {
+    "message": "Direct save failed: $1"
+  },
+  "reloadFailed": {
+    "message": "Reload failed: $1"
+  },
+  "createLabelTitle": {
+    "message": "Create label"
+  },
+  "optionsCapture": {
+    "message": "Captures from the browser"
+  },
+  "hintCaptureSection": {
+    "message": "Defaults for tasks captured from a page: the toolbar button, the context menu entry “Add to Vikunja…” and the Alt+Shift+V shortcut. They also power the popup’s “Save now” button."
+  },
+  "labelCaptureProject": {
+    "message": "Project for captured pages"
+  },
+  "hintCaptureProject": {
+    "message": "Captured pages go to this project. Leave empty to use the default project above."
+  },
+  "labelCaptureLabels": {
+    "message": "Labels for captured pages"
+  },
+  "hintCaptureLabels": {
+    "message": "Comma-separated labels added to every captured page. Labels are created in Vikunja automatically if they do not exist yet. The labels you use most show up first in the capture form."
+  },
+  "sameAsDefaultProject": {
+    "message": "Same as the default project"
+  },
+  "quickDirectSaveTitle": {
+    "message": "Save right away with the capture defaults (project and labels)"
   }
 }

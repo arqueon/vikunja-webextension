@@ -30,7 +30,6 @@
     completeTask,
     updateTask,
     deleteTask,
-    setTaskLabels,
     closePopup,
     isFirefox,
     getQuickAddMagicMode,
@@ -38,7 +37,6 @@
     listLabels,
     createLabel,
     addLabelToTask,
-    findOrCreateLabel,
     addAssigneeToTask,
     buildTaskContent,
     getActiveTab,
@@ -47,6 +45,11 @@
     hostPermissionPatterns,
     hasHostPermissions,
     requestHostPermissions,
+    saveDraft,
+    loadDraft,
+    clearDraft,
+    getRecentLabels,
+    bumpRecentLabels,
   } = window.VikunjaLib;
 
   const { parseTaskText, PrefixMode, PREFIXES, cleanupItemText, analyzeTaskText, removeSpan, repeatTaskFields } = window.QuickAdd;
@@ -54,8 +57,6 @@
     openOptions: uiOpenOptions,
     showToast: uiShowToast,
     fillProjectSelect: uiFillProjectSelect,
-    projectOptions: uiProjectOptions,
-    projectPath: uiProjectPath,
     priorityLabel: uiPriorityLabel,
     duePresetDate: uiDuePresetDate,
     formatDateTimeLocal: uiFormatDateTimeLocal,
@@ -86,12 +87,14 @@
   const captureForm = document.getElementById('capture-form');
   const captureTitle = document.getElementById('capture-title');
   const captureProject = document.getElementById('capture-project');
-  const captureDueToday = document.getElementById('capture-due-today');
+  const captureUrlField = document.getElementById('capture-url-field');
+  const captureUrl = document.getElementById('capture-url');
   const capturePriority = document.getElementById('capture-priority');
   const captureDue = document.getElementById('capture-due');
   const captureLabelsInput = document.getElementById('capture-labels-input');
   const captureLabelsChips = document.getElementById('capture-labels-chips');
   const captureDescription = document.getElementById('capture-description');
+  const captureBack = document.getElementById('capture-back');
   const captureCancel = document.getElementById('capture-cancel');
   const captureAdd = document.getElementById('capture-add');
   const captureDirectAdd = document.getElementById('capture-direct-add');
@@ -115,6 +118,7 @@
   let showCompletedTasks = false;
   let expandedTaskId = null;
   let labelOptions = null;
+  let recentLabels = [];
   const usersByProject = new Map();
   let currentSort = { mode: 'created', orderBy: 'desc' };
   let projectViews = null;
@@ -154,6 +158,134 @@
   function setQuickError(message) {
     quickError.textContent = message || '';
     quickError.hidden = !message;
+  }
+
+  // --- Persistent drafts ---------------------------------------------------
+  // The toolbar popup is destroyed the moment it loses focus, so anything
+  // typed into the quick-add or the capture form is mirrored to session
+  // storage on every input event and restored when the popup reopens. A
+  // successful submit or an explicit cancel clears the capture draft; the
+  // quick-add draft survives until its task is sent.
+
+  function captureDraft() {
+    if (!capture || capture.hidden) return null;
+    return {
+      title: captureTitle ? captureTitle.value : '',
+      projectId: captureProject ? captureProject.value : '',
+      priority: capturePriority ? capturePriority.value : '0',
+      due: captureDue ? captureDue.value : '',
+      labels: captureLabelsInput ? captureLabelsInput.value : '',
+      description: captureDescription ? captureDescription.value : '',
+      url: captureUrl ? captureUrl.value : '',
+    };
+  }
+
+  function currentDraft() {
+    return {
+      quickTitle: quickTitle ? quickTitle.value : '',
+      preset: activePreset,
+      showCompleted: showCompletedTasks,
+      capture: captureDraft(),
+    };
+  }
+
+  function saveDraftNow() {
+    if (typeof saveDraft === 'function') {
+      saveDraft(currentDraft()).catch(() => {});
+    }
+  }
+
+  function clearDraftNow() {
+    if (typeof clearDraft === 'function') {
+      clearDraft().catch(() => {});
+    }
+  }
+
+  // Restores a remembered capture draft. The captured tab info is rebuilt
+  // from the draft itself, so reopening the popup without touching the tab
+  // still shows the form exactly as it was left.
+  function restoreCaptureDraft(d) {
+    if (!d) return;
+    lastCapturedTabInfo = { title: d.title || '', description: d.description || '', url: d.url || '' };
+    if (captureTitle) captureTitle.value = d.title || '';
+    const preferred = Number(d.projectId) || Number(prefs.captureProjectId) || Number(prefs.defaultProjectId) || null;
+    uiFillProjectSelect(captureProject, realProjectList(), {
+      selectedId: preferred,
+      placeholder: t('selectProject', 'Select a project'),
+      fallbackToFirst: true,
+    });
+    if (capturePriority) capturePriority.value = d.priority || '0';
+    if (captureDue) captureDue.value = d.due || '';
+    if (captureUrl) captureUrl.value = d.url || '';
+    if (captureUrlField) captureUrlField.hidden = !d.url;
+    if (captureLabelsInput) captureLabelsInput.value = d.labels || '';
+    if (captureDescription) captureDescription.value = d.description || '';
+    renderCaptureLabelChips();
+    setCaptureError('');
+    showView(capture);
+    saveDraftNow();
+    if (captureTitle && typeof captureTitle.focus === 'function') {
+      captureTitle.focus();
+    }
+  }
+
+  async function restoreDraft() {
+    if (typeof loadDraft !== 'function') return null;
+    const draft = await loadDraft().catch(() => null);
+    if (!draft) return null;
+    if (draft.preset && ['all', 'due', 'favorites'].includes(draft.preset)) {
+      activePreset = draft.preset;
+      document.querySelectorAll('.preset-chip').forEach((c) => {
+        c.classList.toggle('active', c.getAttribute('data-preset') === activePreset);
+      });
+    }
+    if (typeof draft.showCompleted === 'boolean' && toggleCompletedBtn) {
+      showCompletedTasks = draft.showCompleted;
+      toggleCompletedBtn.setAttribute('aria-pressed', String(showCompletedTasks));
+    }
+    if (draft.quickTitle && quickTitle) {
+      quickTitle.value = draft.quickTitle;
+      renderChips();
+      autosize();
+    }
+    if (draft.capture && draft.capture.title) {
+      restoreCaptureDraft(draft.capture);
+    }
+    return draft;
+  }
+
+  // Loads the label list once for both the quick-add chips and the capture
+  // form's label cloud.
+  function ensureLabelOptions() {
+    if (labelOptions === null) {
+      labelOptions = [];
+      if (typeof listLabels === 'function') {
+        listLabels()
+          .then((labels) => {
+            labelOptions = labels || [];
+            renderChips();
+            renderCaptureLabelChips();
+          })
+          .catch(() => {
+            labelOptions = [];
+          });
+      }
+    }
+    return labelOptions;
+  }
+
+  // Labels the user actually assigned sort first in the capture cloud, so the
+  // pipeline labels (readlater, correo, seguimiento…) stay one click away.
+  function orderedLabelOptions() {
+    const lower = recentLabels.map((n) => String(n).toLowerCase());
+    return (labelOptions || []).slice().sort((a, b) => {
+      const ai = lower.indexOf(String(a.title || '').toLowerCase());
+      const bi = lower.indexOf(String(b.title || '').toLowerCase());
+      if (ai === -1 && bi === -1) return 0;
+      if (ai === -1) return 1;
+      if (bi === -1) return -1;
+      return ai - bi;
+    });
   }
 
   function autosize() {
@@ -272,17 +404,7 @@
   }
 
   function buildLabelChip(tokens, P) {
-    if (labelOptions === null) {
-      labelOptions = [];
-      listLabels()
-        .then((labels) => {
-          labelOptions = labels || [];
-          renderChips();
-        })
-        .catch(() => {
-          labelOptions = [];
-        });
-    }
+    ensureLabelOptions();
     const names = tokens.labels.map((l) => l.text);
     const sel = makeChip(names.length > 0 ? 'label' : '');
     sel.title = t('chipLabel', 'Label');
@@ -603,7 +725,7 @@
       const expandBtn = document.createElement('button');
       expandBtn.type = 'button';
       expandBtn.className = 'task-expand-btn';
-      expandBtn.title = isExpanded ? 'Collapse' : 'Edit task details';
+      expandBtn.title = isExpanded ? t('collapse', 'Collapse') : t('editTaskTitle', 'Edit task details');
       expandBtn.textContent = isExpanded ? '▲' : '▼';
       expandBtn.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -621,7 +743,7 @@
         const editTitleInput = document.createElement('input');
         editTitleInput.type = 'text';
         editTitleInput.value = task.title || '';
-        editTitleInput.placeholder = 'Task title';
+        editTitleInput.placeholder = t('editTitlePlaceholder', 'Task title');
         editor.appendChild(editTitleInput);
 
         // Row with Project and Priority
@@ -664,7 +786,7 @@
         // Description textarea
         const descInput = document.createElement('textarea');
         descInput.rows = 3;
-        descInput.placeholder = 'Description (optional)';
+        descInput.placeholder = t('editDescriptionPlaceholder', 'Description (optional)');
         descInput.value = task.description || '';
         editor.appendChild(descInput);
 
@@ -675,7 +797,7 @@
         const saveBtn = document.createElement('button');
         saveBtn.type = 'button';
         saveBtn.className = 'primary';
-        saveBtn.textContent = 'Save';
+        saveBtn.textContent = t('saveButton', 'Save');
         saveBtn.addEventListener('click', async () => {
           saveBtn.disabled = true;
           try {
@@ -691,11 +813,11 @@
               patch.due_date = '0001-01-01T00:00:00Z';
             }
             await updateTask(task.id, patch);
-            uiShowToast(toastEl, 'Task updated.');
+            uiShowToast(toastEl, t('taskUpdated', 'Task updated.'));
             expandedTaskId = null;
             await refreshTasks();
           } catch (err) {
-            uiShowToast(toastEl, `Save failed: ${err.message}`, { error: true });
+            uiShowToast(toastEl, t('saveFailed', 'Save failed: $1', [err.message]), { error: true });
           } finally {
             saveBtn.disabled = false;
           }
@@ -705,7 +827,7 @@
         const openBtn = document.createElement('button');
         openBtn.type = 'button';
         openBtn.className = 'secondary';
-        openBtn.textContent = 'Open ↗';
+        openBtn.textContent = t('openButton', 'Open ↗');
         openBtn.addEventListener('click', () => {
           window.open(`${baseUrl}/tasks/${task.id}`, '_blank');
           closePopup();
@@ -715,15 +837,15 @@
         const deleteBtn = document.createElement('button');
         deleteBtn.type = 'button';
         deleteBtn.className = 'btn-danger';
-        deleteBtn.textContent = 'Delete';
+        deleteBtn.textContent = t('deleteButton', 'Delete');
         let deleteTimer = null;
         deleteBtn.addEventListener('click', async () => {
           if (!deleteBtn.classList.contains('armed')) {
             deleteBtn.classList.add('armed');
-            deleteBtn.textContent = 'Confirm? (3s)';
+            deleteBtn.textContent = t('confirmDeleteButton', 'Confirm? (3s)');
             deleteTimer = setTimeout(() => {
               deleteBtn.classList.remove('armed');
-              deleteBtn.textContent = 'Delete';
+              deleteBtn.textContent = t('deleteButton', 'Delete');
             }, 3500);
             return;
           }
@@ -731,13 +853,13 @@
           deleteBtn.disabled = true;
           try {
             await deleteTask(task.id);
-            uiShowToast(toastEl, 'Task deleted.');
+            uiShowToast(toastEl, t('taskDeleted', 'Task deleted.'));
             expandedTaskId = null;
             await refreshTasks();
           } catch (err) {
-            uiShowToast(toastEl, `Delete failed: ${err.message}`, { error: true });
+            uiShowToast(toastEl, t('deleteFailed', 'Delete failed: $1', [err.message]), { error: true });
             deleteBtn.classList.remove('armed');
-            deleteBtn.textContent = 'Delete';
+            deleteBtn.textContent = t('deleteButton', 'Delete');
             deleteBtn.disabled = false;
           }
         });
@@ -1001,14 +1123,25 @@
       sortBtn.title = sortLabel();
       sortBtn.setAttribute('aria-label', sortLabel());
       tasks = await loadTasks();
+      if (typeof getRecentLabels === 'function') {
+        recentLabels = await getRecentLabels().catch(() => []);
+      }
+      // Restore whatever the user had typed before the popup lost focus,
+      // then honor a capture requested from the context menu / shortcut.
+      const draft = await restoreDraft();
+      if (draft && typeof draft.showCompleted === 'boolean' && draft.showCompleted !== showCompletedTasks) {
+        tasks = await loadTasks();
+      }
       renderTasks();
       renderChips();
       autosize();
-      showView(list);
+      if (!(draft && draft.capture)) {
+        showView(list);
+      }
       const pending = await loadCaptureContent().catch(() => null);
       if (pending) {
         showCaptureForm(pending);
-      } else {
+      } else if (!(draft && draft.capture)) {
         quickTitle.focus();
       }
     } catch (e) {
@@ -1165,6 +1298,7 @@
         const created = await createTask(currentProjectId, body);
         uiShowToast(toastEl, t('taskAdded', 'Task added.'), { link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` } });
         quickTitle.value = '';
+        clearDraftNow();
         renderChips();
         await refreshTasks();
         flashNewTask(created.id);
@@ -1216,8 +1350,12 @@
         await addAssigneeToTask(created.id, user.id);
       }
       await addLabelsToTask(created.id, parsed.labels);
+      if (parsed.labels.length && typeof bumpRecentLabels === 'function') {
+        bumpRecentLabels(parsed.labels).catch(() => {});
+      }
       uiShowToast(toastEl, t('taskAdded', 'Task added.'), { link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` } });
       quickTitle.value = '';
+      clearDraftNow();
       await api.storage.local.set({ lastProjectId: projectId });
       currentProjectId = projectId;
       renderChips();
@@ -1236,12 +1374,26 @@
     captureError.hidden = !message;
   }
 
+  // Opens the capture form with content from the current tab (or a
+  // context-menu capture). The URL now lives in its own field so it stays
+  // visible and editable; the markdown link Vikunja expects is rebuilt at
+  // submit time. Captures also honor the dedicated capture defaults
+  // (project + labels) configured in the options page.
   function showCaptureForm(content) {
     lastCapturedTabInfo = content;
     captureTitle.value = content.title || '';
-    captureDescription.value = content.description || '';
+    const url = String(content.url || '').trim();
+    if (captureUrlField) captureUrlField.hidden = !url;
+    if (captureUrl) captureUrl.value = url;
+    // The old flow buried the link in the description; keep extra prose
+    // (e.g. a message excerpt) but drop a description that is only the link.
+    const description = String(content.description || '').trim();
+    const linkOnly = url && description === `[${captureTitle.value}](${url})`;
+    captureDescription.value = linkOnly ? '' : description;
+    const preferred =
+      Number(prefs.captureProjectId) || Number(prefs.defaultProjectId) || null;
     uiFillProjectSelect(captureProject, realProjectList(), {
-      selectedId: prefs.defaultProjectId,
+      selectedId: preferred,
       placeholder: t('selectProject', 'Select a project'),
       fallbackToFirst: true,
     });
@@ -1253,11 +1405,12 @@
         captureDue.value = '';
       }
     }
-    if (captureLabelsInput) captureLabelsInput.value = '';
+    if (captureLabelsInput) captureLabelsInput.value = String(prefs.captureLabels || '');
     renderCaptureLabelChips();
 
     setCaptureError('');
     showView(capture);
+    saveDraftNow();
     captureTitle.focus();
     if (typeof captureTitle.select === 'function') {
       captureTitle.select();
@@ -1266,18 +1419,49 @@
 
   function renderCaptureLabelChips() {
     if (!captureLabelsChips) return;
+    ensureLabelOptions();
     captureLabelsChips.textContent = '';
     const currentLabels = parseLabelNames(captureLabelsInput ? captureLabelsInput.value : '');
-    (labelOptions || []).slice(0, 15).forEach((lb) => {
-      const chip = document.createElement('span');
-      const isSelected = currentLabels.includes(lb.title.toLowerCase());
+    const options = orderedLabelOptions();
+    options.slice(0, 18).forEach((lb) => {
+      const name = lb.title || String(lb.id);
+      const isSelected = currentLabels.includes(String(name).toLowerCase());
+      const chip = document.createElement('button');
+      chip.type = 'button';
       chip.className = 'label-chip-clickable' + (isSelected ? ' selected' : '');
-      chip.textContent = lb.title;
+      chip.title = name;
+      const dot = document.createElement('span');
+      dot.className = 'label-dot';
+      if (lb.hex_color) {
+        dot.style.background = `#${lb.hex_color}`;
+      }
+      chip.appendChild(dot);
+      const textEl = document.createElement('span');
+      textEl.textContent = name;
+      chip.appendChild(textEl);
       chip.addEventListener('click', () => {
-        toggleCaptureLabel(lb.title);
+        toggleCaptureLabel(name);
       });
       captureLabelsChips.appendChild(chip);
     });
+    // Unknown names typed in the input become "create" chips so new labels
+    // are one click away instead of requiring exact comma syntax.
+    const known = new Set(options.map((lb) => String(lb.title || '').toLowerCase()));
+    currentLabels
+      .filter((name) => !known.has(name))
+      .slice(0, 4)
+      .forEach((name) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'label-chip-clickable label-chip-new';
+        chip.title = t('createLabelTitle', 'Create label');
+        chip.textContent = `+ ${name}`;
+        chip.addEventListener('click', () => {
+          // Already present in the input; just signal that it is offered.
+          if (captureLabelsInput) captureLabelsInput.focus();
+        });
+        captureLabelsChips.appendChild(chip);
+      });
   }
 
   function parseLabelNames(str) {
@@ -1304,21 +1488,38 @@
 
   async function directSaveUrl() {
     const info = lastCapturedTabInfo || await buildTaskContent({}, (await getActiveTab()) || {});
-    const projId = prefs.defaultProjectId || (realProjectList()[0] && realProjectList()[0].id);
+    const projId =
+      Number(prefs.captureProjectId) ||
+      Number(prefs.defaultProjectId) ||
+      (realProjectList()[0] && realProjectList()[0].id);
     if (!projId) {
       uiShowToast(toastEl, t('pleaseSelectProject', 'Please configure a default project in settings.'), { error: true });
       return;
     }
+    const url = String(info.url || '').trim();
     const body = {
-      title: info.title || 'Saved Webpage',
-      description: info.description || info.url || '',
+      title: info.title || t('addTaskFallback', 'Add task'),
     };
+    const parts = [];
+    if (url) parts.push(`[${body.title}](${url})`);
+    if (info.description && info.description !== `[${body.title}](${url})`) {
+      parts.push(String(info.description).trim());
+    }
+    if (parts.length) body.description = parts.join('\n\n');
     if (prefs.dueToday) {
       body.due_date = dueTodayISO();
     }
+    const rawLabels = parseLabelNames(prefs.captureLabels || '');
     try {
       if (captureDirectAdd) captureDirectAdd.disabled = true;
       const created = await createTask(projId, body);
+      if (rawLabels.length) {
+        await addLabelsToTask(created.id, rawLabels);
+        if (typeof bumpRecentLabels === 'function') {
+          bumpRecentLabels(rawLabels).catch(() => {});
+        }
+      }
+      clearDraftNow();
       showView(list);
       uiShowToast(toastEl, t('taskAdded', 'Task added.'), {
         link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` },
@@ -1327,7 +1528,7 @@
       flashNewTask(created.id);
       quickTitle.focus();
     } catch (err) {
-      uiShowToast(toastEl, `Direct save failed: ${err.message}`, { error: true });
+      uiShowToast(toastEl, t('directSaveFailed', 'Direct save failed: $1', [err.message]), { error: true });
     } finally {
       if (captureDirectAdd) captureDirectAdd.disabled = false;
     }
@@ -1362,27 +1563,35 @@
     captureAdd.disabled = true;
     try {
       const body = { title };
+      // The link travels in the description as a markdown link, the same
+      // shape the Vikunja web UI and the existing pipelines expect.
+      const url = captureUrl ? String(captureUrl.value || '').trim() : '';
       const description = captureDescription.value.trim();
-      if (description) {
-        body.description = description;
+      const parts = [];
+      if (url) parts.push(`[${title}](${url})`);
+      if (description) parts.push(description);
+      if (parts.length) {
+        body.description = parts.join('\n\n');
       }
       if (capturePriority && Number(capturePriority.value) > 0) {
         body.priority = Number(capturePriority.value);
       }
       if (captureDue && captureDue.value) {
         body.due_date = new Date(captureDue.value).toISOString();
-      } else if (captureDueToday && captureDueToday.checked) {
-        body.due_date = dueTodayISO();
       }
       const created = await createTask(captureProject.value, body);
 
       // Add labels if specified
-      if (captureLabelsInput && captureLabelsInput.value.trim()) {
-        const rawLabels = captureLabelsInput.value.split(',').map((s) => s.trim()).filter(Boolean);
+      const rawLabels = captureLabelsInput ? parseLabelNames(captureLabelsInput.value) : [];
+      if (rawLabels.length) {
         await addLabelsToTask(created.id, rawLabels);
+        if (typeof bumpRecentLabels === 'function') {
+          bumpRecentLabels(rawLabels).catch(() => {});
+        }
       }
 
       await api.storage.local.set({ lastProjectId: Number(captureProject.value) });
+      clearDraftNow();
       showView(list);
       uiShowToast(toastEl, t('taskAdded', 'Task added.'), {
         link: { id: created.id, href: `${baseUrl}/tasks/${created.id}` },
@@ -1397,8 +1606,12 @@
     }
   }
 
+  // Canceling discards the capture draft (the quick-add draft stays), so an
+  // accidental reopen does not resurrect a form the user walked away from.
   function closeCaptureForm() {
     showView(list);
+    saveDraftNow();
+    quickTitle.focus();
   }
 
   openSettingsBtn.addEventListener('click', () => {
@@ -1440,11 +1653,34 @@
   if (captureDirectAdd) {
     captureDirectAdd.addEventListener('click', directSaveUrl);
   }
+  if (captureBack) {
+    captureBack.addEventListener('click', closeCaptureForm);
+  }
   captureForm.addEventListener('submit', submitCapture);
   captureCancel.addEventListener('click', closeCaptureForm);
   captureTitle.addEventListener('input', () => setCaptureError(''));
   if (captureLabelsInput) {
     captureLabelsInput.addEventListener('input', renderCaptureLabelChips);
+  }
+  // Every keystroke lands in session storage, because the popup can be
+  // destroyed without any further notice the moment it loses focus.
+  const draftInputs = [
+    [quickTitle, 'input'],
+    [captureTitle, 'input'],
+    [captureUrl, 'input'],
+    [captureProject, 'change'],
+    [capturePriority, 'change'],
+    [captureDue, 'change'],
+    [captureLabelsInput, 'input'],
+    [captureDescription, 'input'],
+  ];
+  draftInputs.forEach(([el, type]) => {
+    if (el && typeof el.addEventListener === 'function') {
+      el.addEventListener(type, saveDraftNow);
+    }
+  });
+  if (typeof window.addEventListener === 'function') {
+    window.addEventListener('pagehide', saveDraftNow);
   }
 
   // Due date preset buttons in capture form
@@ -1457,6 +1693,7 @@
       } else {
         captureDue.value = uiFormatDateTimeLocal(uiDuePresetDate(preset));
       }
+      saveDraftNow();
     });
   });
 
@@ -1466,6 +1703,7 @@
       document.querySelectorAll('.preset-chip').forEach((c) => c.classList.remove('active'));
       btn.classList.add('active');
       activePreset = btn.getAttribute('data-preset') || 'all';
+      saveDraftNow();
       renderTasks();
     });
   });
@@ -1475,10 +1713,11 @@
     toggleCompletedBtn.addEventListener('click', async () => {
       showCompletedTasks = !showCompletedTasks;
       toggleCompletedBtn.setAttribute('aria-pressed', String(showCompletedTasks));
+      saveDraftNow();
       try {
         await refreshTasks();
       } catch (err) {
-        uiShowToast(toastEl, `Reload failed: ${err.message}`, { error: true });
+        uiShowToast(toastEl, t('reloadFailed', 'Reload failed: $1', [err.message]), { error: true });
       }
     });
   }
@@ -1503,6 +1742,23 @@
       }
     });
     document.addEventListener('keydown', (e) => {
+      // Capture view: Esc goes back, Ctrl/Cmd+Enter saves the task.
+      if (capture && !capture.hidden) {
+        if (e.key === 'Escape') {
+          e.preventDefault();
+          closeCaptureForm();
+          return;
+        }
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+          e.preventDefault();
+          if (typeof captureForm.requestSubmit === 'function') {
+            captureForm.requestSubmit();
+          } else if (typeof captureForm.submit === 'function') {
+            captureForm.submit();
+          }
+          return;
+        }
+      }
       if (list.hidden) return;
       // Ctrl+N is a reserved Firefox shortcut (new window) that never reaches
       // this page, so Firefox falls back to Alt+Shift+N; Chrome keeps Ctrl+N.

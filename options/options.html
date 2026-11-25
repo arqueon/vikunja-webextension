@@ -91,6 +91,24 @@
     />
     <p class="hint" data-i18n-html="hintCustomFilter">Applied to the popup task list. Setting a custom filter replaces the default <code>done = false</code> filter (which hides completed tasks). See <a href="https://vikunja.io/docs/filters" target="_blank" rel="noopener noreferrer">vikunja.io/docs/filters</a>.</p>
 
+    <h2 data-i18n="optionsCapture">Captures from the browser</h2>
+    <p class="hint" data-i18n="hintCaptureSection">Defaults for tasks captured from a page: the toolbar button, the context menu entry “Add to Vikunja…” and the Alt+Shift+V shortcut. They also power the popup’s “Save now” button.</p>
+
+    <label for="capture-project" data-i18n="labelCaptureProject">Project for captured pages</label>
+    <select id="capture-project" name="captureProjectId"></select>
+    <p class="hint" data-i18n="hintCaptureProject">Captured pages go to this project. Leave empty to use the default project above.</p>
+
+    <label for="capture-labels" data-i18n="labelCaptureLabels">Labels for captured pages</label>
+    <input
+      type="text"
+      id="capture-labels"
+      name="captureLabels"
+      placeholder="readlater, research"
+      autocomplete="off"
+      spellcheck="false"
+    />
+    <p class="hint" data-i18n="hintCaptureLabels">Comma-separated labels added to every captured page. Labels are created in Vikunja automatically if they do not exist yet. The labels you use most show up first in the capture form.</p>
+
     <section id="integrations">
       <h2 data-i18n="optionsElement">Matrix Element Integration</h2>
       <p class="hint" data-i18n="hintElement">Add a Matrix Element web instance to get an “Add to Vikunja” button on every message. The extension asks for permission to read the page, then adds the task through your Vikunja connection.</p>
