@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Vikunja · Kanban</title>
+  <link rel="stylesheet" href="../styles/common.css" />
+  <link rel="stylesheet" href="kanban.css" />
+</head>
+<body>
+  <header class="board-header">
+    <div class="brand">
+      <img src="../icons/icon-32.png" alt="" width="20" height="20" />
+      <span class="brand-name" data-i18n="kanbanTitle">Kanban triage</span>
+    </div>
+    <div class="board-controls">
+      <label class="control">
+        <span class="control-label" data-i18n="fieldProject">Project</span>
+        <select id="project-select"></select>
+      </label>
+      <label class="control" id="view-control" hidden>
+        <span class="control-label" data-i18n="fieldView">View</span>
+        <select id="view-select"></select>
+      </label>
+      <div class="segmented" role="group" aria-label="Grouping">
+        <button type="button" id="group-views" class="segment active" aria-pressed="true" title="Columns follow the project's kanban view" data-i18n-title="kanbanGroupViewsTitle" data-i18n="kanbanGroupViews">Views</button>
+        <button type="button" id="group-projects" class="segment" aria-pressed="false" title="Columns are projects; dropping a card moves it there" data-i18n-title="kanbanGroupProjectsTitle" data-i18n="kanbanGroupProjects">Projects</button>
+      </div>
+      <button type="button" id="pending-toggle" class="chip-toggle" aria-pressed="false" title="Show only pending tasks" data-i18n-title="kanbanPendingTitle" data-i18n="kanbanPendingOnly">Pending only</button>
+      <button type="button" id="refresh" class="icon-btn" title="Refresh" aria-label="Refresh" data-i18n-title="kanbanRefreshTitle" data-i18n-aria-label="kanbanRefreshTitle">
+        <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <polyline points="23 4 23 10 17 10"></polyline>
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <p id="board-notice" class="board-notice" hidden></p>
+  <main id="board" class="board" aria-live="polite"></main>
+  <p id="board-error" class="board-error" role="alert" hidden></p>
+  <div id="toast" class="toast" hidden></div>
+
+  <script src="../lib/i18n.js"></script>
+  <script src="../lib/vikunja.js"></script>
+  <script src="../lib/ui.js"></script>
+  <script src="kanban.js"></script>
+</body>
+</html>

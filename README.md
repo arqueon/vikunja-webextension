@@ -53,6 +53,16 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
   custom filter for the task list, the default sort order and whether to
   remember your last sort choice, plus a dedicated *Captures from the
   browser* section (project and automatic labels for captured pages).
+- **Kanban triage board** — a button in the popup header opens a floating
+  ~900px panel with the project's tasks as cards. Two groupings, switchable
+  from the header: **Views** uses the project's own kanban view (its buckets
+  become the columns — To-Do / Doing / Done…, exactly as defined in Vikunja)
+  and **Projects** uses projects as columns, so dropping a card moves it to
+  that project. The board opens on the *Inbox* project by default, falls
+  back to project columns when a project has no kanban view, and remembers
+  the grouping. Cards support native drag & drop, ←/→ nudges, a complete
+  checkbox and a link to the web view; every task is shown by default with
+  a pending-only toggle.
 - **Sorting** — a sort button in the popup header opens a menu to order the
   task list by Vikunja's manual position, title, created, updated, due date or
   priority, each of which can be reversed (ascending/descending). Newly added
@@ -124,6 +134,7 @@ step). Run them from the repository root:
 ```sh
 node smoketests/vikunja_lib_test.js        # API client (pagination, tasks, labels, users)
 node smoketests/vikunja_popup_test.js      # popup UI + Quick Add Magic flow
+node smoketests/vikunja_kanban_test.js     # kanban board: groupings, moves, fallback
 node smoketests/vikunja_extra_test.js      # options window
 node smoketests/vikunja_element_test.js    # background: Element instances, content-script hooks
 node smoketests/vikunja_content_test.js    # Element page: injected buttons + toasts
@@ -185,7 +196,7 @@ The Chrome pack stages only the shipped files and drops Firefox-only `background
 
 1. Log into the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution).
 2. Choose **"On this site"** (listed on AMO).
-3. Upload `dist/vikunja-companion-1.1.0.zip` (or `.xpi`).
+3. Upload `dist/vikunja-companion-1.2.0.zip` (or `.xpi`).
 4. Select category: **Productivity**.
 5. The extension does not collect any user data (`data_collection_permissions: { required: ["none"] }`).
 6. Submit for review!

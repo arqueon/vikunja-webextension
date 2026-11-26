@@ -589,5 +589,68 @@
   },
   "descPreviewLabel": {
     "message": "Vista previa"
+  },
+  "openKanbanTitle": {
+    "message": "Abrir el tablero kanban de triage"
+  },
+  "kanbanTitle": {
+    "message": "Triage kanban"
+  },
+  "fieldView": {
+    "message": "Vista"
+  },
+  "kanbanGroupViews": {
+    "message": "Vistas"
+  },
+  "kanbanGroupProjects": {
+    "message": "Proyectos"
+  },
+  "kanbanGroupViewsTitle": {
+    "message": "Las columnas siguen la vista kanban del proyecto (To-Do / Doing / Done…)"
+  },
+  "kanbanGroupProjectsTitle": {
+    "message": "Las columnas son proyectos; soltar una tarjeta la mueve a ese proyecto"
+  },
+  "kanbanPendingOnly": {
+    "message": "Solo pendientes"
+  },
+  "kanbanPendingTitle": {
+    "message": "Mostrar solo tareas pendientes"
+  },
+  "kanbanRefreshTitle": {
+    "message": "Recargar"
+  },
+  "kanbanViewFallback": {
+    "message": "Kanban"
+  },
+  "kanbanColumnFallback": {
+    "message": "Columna"
+  },
+  "kanbanNoBucket": {
+    "message": "Sin columna"
+  },
+  "kanbanEmpty": {
+    "message": "Nada por aquí"
+  },
+  "kanbanNoProjects": {
+    "message": "No hay proyectos — crea uno en Vikunja primero."
+  },
+  "kanbanNoViewFallback": {
+    "message": "Este proyecto no tiene vista kanban — se muestran proyectos como columnas."
+  },
+  "kanbanMovePrev": {
+    "message": "Mover a la columna anterior"
+  },
+  "kanbanMoveNext": {
+    "message": "Mover a la columna siguiente"
+  },
+  "kanbanMoveFailed": {
+    "message": "No se pudo mover la tarea: $1"
+  },
+  "kanbanLoadFailed": {
+    "message": "No se pudo cargar el tablero: $1"
+  },
+  "kanbanNoBuckets": {
+    "message": "Esta vista kanban aún no tiene columnas."
   }
 }

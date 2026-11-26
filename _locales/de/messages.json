@@ -589,5 +589,68 @@
   },
   "descPreviewLabel": {
     "message": "Vorschau"
+  },
+  "openKanbanTitle": {
+    "message": "Kanban-Triage-Board öffnen"
+  },
+  "kanbanTitle": {
+    "message": "Kanban-Triage"
+  },
+  "fieldView": {
+    "message": "Ansicht"
+  },
+  "kanbanGroupViews": {
+    "message": "Ansichten"
+  },
+  "kanbanGroupProjects": {
+    "message": "Projekte"
+  },
+  "kanbanGroupViewsTitle": {
+    "message": "Spalten folgen der Kanban-Ansicht des Projekts (To-Do / Doing / Done…)"
+  },
+  "kanbanGroupProjectsTitle": {
+    "message": "Spalten sind Projekte; Ablegen einer Karte verschiebt sie dorthin"
+  },
+  "kanbanPendingOnly": {
+    "message": "Nur offene"
+  },
+  "kanbanPendingTitle": {
+    "message": "Nur offene Aufgaben zeigen"
+  },
+  "kanbanRefreshTitle": {
+    "message": "Neu laden"
+  },
+  "kanbanViewFallback": {
+    "message": "Kanban"
+  },
+  "kanbanColumnFallback": {
+    "message": "Spalte"
+  },
+  "kanbanNoBucket": {
+    "message": "Ohne Spalte"
+  },
+  "kanbanEmpty": {
+    "message": "Nichts hier"
+  },
+  "kanbanNoProjects": {
+    "message": "Keine Projekte gefunden — lege zuerst eines in Vikunja an."
+  },
+  "kanbanNoViewFallback": {
+    "message": "Dieses Projekt hat keine Kanban-Ansicht — Projekte werden als Spalten gezeigt."
+  },
+  "kanbanMovePrev": {
+    "message": "In die vorherige Spalte verschieben"
+  },
+  "kanbanMoveNext": {
+    "message": "In die nächste Spalte verschieben"
+  },
+  "kanbanMoveFailed": {
+    "message": "Aufgabe konnte nicht verschoben werden: $1"
+  },
+  "kanbanLoadFailed": {
+    "message": "Board konnte nicht geladen werden: $1"
+  },
+  "kanbanNoBuckets": {
+    "message": "Diese Kanban-Ansicht hat noch keine Spalten."
   }
 }

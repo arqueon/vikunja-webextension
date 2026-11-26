@@ -589,5 +589,68 @@
   },
   "descPreviewLabel": {
     "message": "Preview"
+  },
+  "openKanbanTitle": {
+    "message": "Open the kanban triage board"
+  },
+  "kanbanTitle": {
+    "message": "Kanban triage"
+  },
+  "fieldView": {
+    "message": "View"
+  },
+  "kanbanGroupViews": {
+    "message": "Views"
+  },
+  "kanbanGroupProjects": {
+    "message": "Projects"
+  },
+  "kanbanGroupViewsTitle": {
+    "message": "Columns follow the project's kanban view (To-Do / Doing / Done…)"
+  },
+  "kanbanGroupProjectsTitle": {
+    "message": "Columns are projects; dropping a card moves it to that project"
+  },
+  "kanbanPendingOnly": {
+    "message": "Pending only"
+  },
+  "kanbanPendingTitle": {
+    "message": "Show only pending tasks"
+  },
+  "kanbanRefreshTitle": {
+    "message": "Refresh"
+  },
+  "kanbanViewFallback": {
+    "message": "Kanban"
+  },
+  "kanbanColumnFallback": {
+    "message": "Column"
+  },
+  "kanbanNoBucket": {
+    "message": "No column"
+  },
+  "kanbanEmpty": {
+    "message": "Nothing here"
+  },
+  "kanbanNoProjects": {
+    "message": "No projects found — create one in Vikunja first."
+  },
+  "kanbanNoViewFallback": {
+    "message": "This project has no kanban view — showing projects as columns instead."
+  },
+  "kanbanMovePrev": {
+    "message": "Move to the previous column"
+  },
+  "kanbanMoveNext": {
+    "message": "Move to the next column"
+  },
+  "kanbanMoveFailed": {
+    "message": "Could not move the task: $1"
+  },
+  "kanbanLoadFailed": {
+    "message": "Could not load the board: $1"
+  },
+  "kanbanNoBuckets": {
+    "message": "This kanban view has no columns yet."
   }
 }

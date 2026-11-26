@@ -1,0 +1,411 @@
+/* Kanban triage panel on the Proton tokens from styles/common.css.
+   Floating window: the board fills the viewport with horizontally
+   scrolling columns. */
+
+body {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.board-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: none;
+  padding: 0.45rem 0.7rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex: none;
+}
+
+.brand-name {
+  font-size: 0.875rem;
+  font-weight: 600;
+  user-select: none;
+}
+
+.board-controls {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.control {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.control-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.control select {
+  width: auto;
+  min-width: 8rem;
+  max-width: 16rem;
+  padding: 0.3rem 0.45rem;
+  font-size: 0.78rem;
+}
+
+/* Firefox-like segmented control for the grouping mode */
+.segmented {
+  display: inline-flex;
+  padding: 2px;
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  gap: 1px;
+  flex: none;
+}
+
+.segment {
+  border: none;
+  border-radius: calc(var(--radius) - 1px);
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.25rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.segment:hover {
+  color: var(--ink);
+  background: var(--surface-hover);
+}
+
+.segment.active {
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow-sm);
+}
+
+.chip-toggle {
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  padding: 0.28rem 0.7rem;
+  cursor: pointer;
+  white-space: nowrap;
+  flex: none;
+}
+
+.chip-toggle:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.chip-toggle[aria-pressed="true"] {
+  background: var(--blue-subtle);
+  color: var(--blue);
+}
+
+.icon-btn {
+  width: 28px;
+  height: 28px;
+  flex: none;
+}
+
+.board-notice {
+  flex: none;
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.75rem;
+  color: var(--muted);
+  background: var(--surface-alt);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.board-error {
+  flex: none;
+  margin: 0;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.78rem;
+  color: var(--err);
+}
+
+/* --- Board and columns --- */
+
+.board {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  align-items: stretch;
+}
+
+.board > .empty {
+  flex: 1;
+  align-self: center;
+}
+
+.kcol {
+  flex: 0 0 16.5rem;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--surface-alt);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+}
+
+.kcol.drag-over {
+  border-color: var(--blue);
+  background: var(--blue-subtle);
+}
+
+.kcol-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.6rem 0.35rem;
+}
+
+.kcol-title {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.kcol-count {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--surface);
+  border-radius: 999px;
+  padding: 0.05rem 0.45rem;
+}
+
+.kcol-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.kcol-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 0 0.4rem 0.4rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.kcol-empty {
+  font-size: 0.72rem;
+  color: var(--muted);
+  text-align: center;
+  padding: 0.6rem 0;
+}
+
+/* --- Cards --- */
+
+.kcard {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  padding: 0.45rem 0.5rem;
+  background: var(--surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-sm);
+  cursor: grab;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+}
+
+.kcard:hover {
+  border-color: var(--border);
+}
+
+.kcard.dragging {
+  opacity: 0.55;
+  cursor: grabbing;
+}
+
+.kcard.done .kcard-title {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.kcard-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.kcard-title {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  word-break: break-word;
+  cursor: pointer;
+}
+
+.kcard-title:hover {
+  color: var(--blue);
+}
+
+.kcard-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+}
+
+.kcard-meta .task-tag {
+  padding: 0.04rem 0.4rem;
+  max-width: 110px;
+}
+
+.kcard-meta .task-due {
+  color: var(--muted);
+}
+
+.kcard-meta .task-due.overdue {
+  color: var(--err);
+  font-weight: 600;
+}
+
+.kcard-meta .task-due.today {
+  color: var(--ok);
+  font-weight: 600;
+}
+
+/* checkbox: reuse the popup's Vikunja SVG checkbox */
+.task-check {
+  position: relative;
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+  height: 1.4em;
+  padding: 0;
+  margin: 1px 0 0;
+}
+
+.task-check input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.task-check svg {
+  width: 16px;
+  height: 16px;
+  fill: none;
+  stroke: var(--checkbox-stroke);
+  stroke-width: 1.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke 0.2s ease;
+}
+
+.task-check:hover input:not(:disabled) + svg,
+.task-check input:checked + svg {
+  stroke: var(--blue);
+}
+
+.task-check svg path {
+  stroke-dasharray: 60;
+  stroke-dashoffset: 0;
+}
+
+.task-check svg polyline {
+  stroke-dasharray: 22;
+  stroke-dashoffset: 66;
+}
+
+.task-check input:checked + svg path {
+  stroke-dashoffset: 60;
+}
+
+.task-check input:checked + svg polyline {
+  stroke-dashoffset: 42;
+}
+
+/* move buttons: appear on hover/focus, always reachable by keyboard */
+.kcard-move {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.kcard:hover .kcard-move,
+.kcard-move:focus-within {
+  opacity: 1;
+}
+
+.kcard-move button {
+  width: 20px;
+  height: 18px;
+  padding: 0;
+  border: none;
+  border-radius: calc(var(--radius) - 1px);
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 0.6rem;
+  line-height: 1;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.kcard-move button:hover {
+  background: var(--blue-subtle);
+  color: var(--blue);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kcard,
+  .kcard-move,
+  .kcol.drag-over {
+    transition: none;
+  }
+}

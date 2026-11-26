@@ -50,6 +50,7 @@
     clearDraft,
     getRecentLabels,
     bumpRecentLabels,
+    openKanban,
   } = window.VikunjaLib;
 
   const { parseTaskText, PrefixMode, PREFIXES, cleanupItemText, analyzeTaskText, removeSpan, repeatTaskFields } = window.QuickAdd;
@@ -77,6 +78,7 @@
   const sortMenu = document.getElementById('sort-menu');
   const viewSwitcher = document.getElementById('view-switcher');
   const addSiteBtn = document.getElementById('add-site');
+  const openKanbanBtn = document.getElementById('open-kanban');
   const taskList = document.getElementById('task-list');
   const taskEmpty = document.getElementById('task-empty');
   const toastEl = document.getElementById('toast');
@@ -1778,6 +1780,12 @@
     }
   });
   addSiteBtn.addEventListener('click', addCurrentSite);
+  if (openKanbanBtn) {
+    openKanbanBtn.addEventListener('click', () => {
+      openKanban().catch(() => {});
+      closePopup();
+    });
+  }
   if (captureDirectAdd) {
     captureDirectAdd.addEventListener('click', directSaveUrl);
   }

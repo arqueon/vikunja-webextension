@@ -589,5 +589,68 @@
   },
   "descPreviewLabel": {
     "message": "Предпросмотр"
+  },
+  "openKanbanTitle": {
+    "message": "Открыть канбан-доску сортировки"
+  },
+  "kanbanTitle": {
+    "message": "Канбан-сортировка"
+  },
+  "fieldView": {
+    "message": "Вид"
+  },
+  "kanbanGroupViews": {
+    "message": "Виды"
+  },
+  "kanbanGroupProjects": {
+    "message": "Проекты"
+  },
+  "kanbanGroupViewsTitle": {
+    "message": "Колонки повторяют канбан-вид проекта (To-Do / Doing / Done…)"
+  },
+  "kanbanGroupProjectsTitle": {
+    "message": "Колонки — проекты; перетаскивание карточки переносит её в проект"
+  },
+  "kanbanPendingOnly": {
+    "message": "Только незавершённые"
+  },
+  "kanbanPendingTitle": {
+    "message": "Показать только незавершённые задачи"
+  },
+  "kanbanRefreshTitle": {
+    "message": "Обновить"
+  },
+  "kanbanViewFallback": {
+    "message": "Канбан"
+  },
+  "kanbanColumnFallback": {
+    "message": "Колонка"
+  },
+  "kanbanNoBucket": {
+    "message": "Без колонки"
+  },
+  "kanbanEmpty": {
+    "message": "Здесь пусто"
+  },
+  "kanbanNoProjects": {
+    "message": "Проектов нет — сначала создайте один в Vikunja."
+  },
+  "kanbanNoViewFallback": {
+    "message": "У проекта нет канбан-вида — показаны проекты как колонки."
+  },
+  "kanbanMovePrev": {
+    "message": "Перенести в предыдущую колонку"
+  },
+  "kanbanMoveNext": {
+    "message": "Перенести в следующую колонку"
+  },
+  "kanbanMoveFailed": {
+    "message": "Не удалось перенести задачу: $1"
+  },
+  "kanbanLoadFailed": {
+    "message": "Не удалось загрузить доску: $1"
+  },
+  "kanbanNoBuckets": {
+    "message": "У этого канбан-вида пока нет колонок."
   }
 }
