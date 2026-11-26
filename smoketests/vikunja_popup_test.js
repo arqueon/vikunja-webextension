@@ -868,6 +868,66 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(fallbackFetch.projectId === 9 && fallbackFetch.projectId !== 5, 'missing Inbox falls back to the default project scope, got ' + JSON.stringify(fallbackFetch.projectId));
   storage.delete('vikunjaDraft');
 
+  // --- Nested project & subproject filter in the popup scope bar ---
+  const nestedProjects = [
+    { id: 1, title: 'Inbox' },
+    { id: 10, title: 'ANYTYPE' },
+    { id: 11, title: 'Our Space', parent_project_id: 10 },
+    { id: 12, title: 'Casa', parent_project_id: 11 },
+    { id: -2, title: 'GTD · Our Space', is_favorite: true },
+  ];
+  VikunjaLib.getPrefs = () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '', sortBy: 'created', rememberLastSort: false });
+  VikunjaLib.listProjects = () => Promise.resolve(nestedProjects);
+  storage.set('lastViewId', null);
+  storage.set('lastFilterProjectId', null);
+  const origQSA = global.document.querySelectorAll;
+  const inboxChipEl = ids['preset-inbox'];
+  inboxChipEl.setAttribute('data-preset', 'inbox');
+  global.document.querySelectorAll = (sel) => (sel === '.preset-chip' ? [inboxChipEl] : []);
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+
+  const pfOpts = ids['project-filter'].options;
+  assert(pfOpts[0].value === '' && pfOpts[0].textContent === 'All projects', 'project filter starts with All projects');
+  assert(
+    pfOpts.map((o) => o.textContent).includes('\u00A0\u00A0\u00A0\u00A0└ Casa'),
+    'nested subproject indented in project filter, got ' + JSON.stringify(pfOpts.map((o) => o.textContent)),
+  );
+
+  // Selecting a leaf subproject scopes to its projectId and unmarks All tasks.
+  const pfChange = () => ids['project-filter'].listeners['change'][ids['project-filter'].listeners['change'].length - 1];
+  await pfChange()({ target: { value: '12' } });
+  const leafFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(leafFetch.projectId === 12 && leafFetch.filter === 'done = false', 'leaf project filter scopes by projectId, got ' + JSON.stringify(leafFetch));
+  assert(ids['project-filter'].classList.contains('active'), 'project filter marked active');
+  assert(!ids['view-switcher'].childNodes[0].classList.contains('active'), 'All tasks unmarked when project filter active');
+  assert(storage.get('lastFilterProjectId') === 12, 'persists lastFilterProjectId');
+
+  // Selecting a parent project queries parent + all descendants via `project in ...`.
+  await pfChange()({ target: { value: '10' } });
+  const parentFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(!parentFetch.projectId, 'parent project filter omits projectId so subprojects are included, got ' + JSON.stringify(parentFetch));
+  assert(parentFetch.filter === '(done = false) && project in 10, 11, 12', 'parent project filter includes full subtree, got ' + JSON.stringify(parentFetch.filter));
+
+  // Clicking All tasks in #view-switcher clears the project filter.
+  await ids['view-switcher'].childNodes[0].listeners['click'][0]();
+  assert(ids['project-filter'].value === '', 'All tasks resets project filter select');
+  assert(!ids['project-filter'].classList.contains('active'), 'All tasks unmarks project filter');
+  assert(storage.get('lastFilterProjectId') === null, 'All tasks clears lastFilterProjectId');
+
+  // Clicking Inbox preset clears any active saved-filter view / project filter.
+  await ids['view-switcher'].childNodes[1].listeners['click'][0]();
+  assert(storage.get('lastViewId') === -2, 'saved filter active before Inbox click');
+  await inboxChipEl.listeners['click'][inboxChipEl.listeners['click'].length - 1]();
+  global.document.querySelectorAll = origQSA;
+  await new Promise((r) => { setTimeout(r, 10); });
+  assert(
+    storage.get('lastViewId') === null && storage.get('lastFilterProjectId') === null,
+    'Inbox preset clears saved view and project filter, got view=' + JSON.stringify(storage.get('lastViewId')) + ' proj=' + JSON.stringify(storage.get('lastFilterProjectId')),
+  );
+  const inboxScopeFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(inboxScopeFetch.projectId === 1, 'Inbox preset loads Inbox project after clearing view, got ' + JSON.stringify(inboxScopeFetch));
+
   if (errors.length) {
     console.log('FAIL');
     errors.forEach((e) => console.log('  - ' + e));

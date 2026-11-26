@@ -13,18 +13,19 @@
       <span class="brand-name" data-i18n="kanbanTitle">Kanban triage</span>
     </div>
     <div class="board-controls">
-      <label class="control">
-        <span class="control-label" data-i18n="fieldProject">Project</span>
+      <div class="segmented" role="group" aria-label="Mode">
+        <button type="button" id="mode-gtd" class="segment" aria-pressed="false" title="GTD saved filters with their kanban columns" data-i18n-title="kanbanModeGtdTitle" data-i18n="kanbanModeGtd">GTD Views</button>
+        <button type="button" id="mode-projects" class="segment active" aria-pressed="true" title="Nested projects with their kanban columns" data-i18n-title="kanbanModeProjectsTitle" data-i18n="kanbanModeProjects">Projects</button>
+        <button type="button" id="mode-triage" class="segment" aria-pressed="false" title="Columns are projects; dropping a card moves it there" data-i18n-title="kanbanModeTriageTitle" data-i18n="kanbanModeTriage">Move to project</button>
+      </div>
+      <label class="control" id="target-control">
+        <span class="control-label" id="target-label" data-i18n="fieldProject">Project</span>
         <select id="project-select"></select>
       </label>
       <label class="control" id="view-control" hidden>
         <span class="control-label" data-i18n="fieldView">View</span>
         <select id="view-select"></select>
       </label>
-      <div class="segmented" role="group" aria-label="Grouping">
-        <button type="button" id="group-views" class="segment active" aria-pressed="true" title="Columns follow the project's kanban view" data-i18n-title="kanbanGroupViewsTitle" data-i18n="kanbanGroupViews">Views</button>
-        <button type="button" id="group-projects" class="segment" aria-pressed="false" title="Columns are projects; dropping a card moves it there" data-i18n-title="kanbanGroupProjectsTitle" data-i18n="kanbanGroupProjects">Projects</button>
-      </div>
       <button type="button" id="pending-toggle" class="chip-toggle" aria-pressed="false" title="Show only pending tasks" data-i18n-title="kanbanPendingTitle" data-i18n="kanbanPendingOnly">Pending only</button>
       <button type="button" id="refresh" class="icon-btn" title="Refresh" aria-label="Refresh" data-i18n-title="kanbanRefreshTitle" data-i18n-aria-label="kanbanRefreshTitle">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">

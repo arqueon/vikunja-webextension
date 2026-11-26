@@ -599,6 +599,39 @@
   "fieldView": {
     "message": "View"
   },
+  "fieldBoard": {
+    "message": "Board"
+  },
+  "kanbanModeGtd": {
+    "message": "GTD Views"
+  },
+  "kanbanModeGtdTitle": {
+    "message": "Saved GTD and filter boards with their kanban columns"
+  },
+  "kanbanModeProjects": {
+    "message": "Projects"
+  },
+  "kanbanModeProjectsTitle": {
+    "message": "Nested projects with their configured kanban view"
+  },
+  "kanbanModeTriage": {
+    "message": "Move to project"
+  },
+  "kanbanModeTriageTitle": {
+    "message": "Columns are projects; dropping a card moves it to that project"
+  },
+  "kanbanNoKanbanView": {
+    "message": "This board has no kanban view configured in Vikunja."
+  },
+  "kanbanNoSavedViews": {
+    "message": "No saved filters found — create or favorite a filter in Vikunja."
+  },
+  "kanbanFilterBucketsNotice": {
+    "message": "Filter-based kanban view — columns are automatic and read-only."
+  },
+  "kanbanContainerEmptyNotice": {
+    "message": "This parent project has no direct tasks — check its subprojects or the GTD views tab."
+  },
   "kanbanGroupViews": {
     "message": "Views"
   },
@@ -658,5 +691,14 @@
   },
   "previewHtmlButton": {
     "message": "Back to preview"
+  },
+  "allProjectsOption": {
+    "message": "All projects"
+  },
+  "projectFilterAriaLabel": {
+    "message": "Filter by project"
+  },
+  "projectFilterTitle": {
+    "message": "Filter tasks by project or subproject"
   }
 }

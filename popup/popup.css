@@ -342,15 +342,56 @@ body {
   flex: none;
 }
 
-/* --- Saved-filter view switcher --- */
+/* --- Saved-filter view switcher & project scope bar --- */
 
-.view-switcher {
+.scope-bar {
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex: none;
   padding: 0.4rem 0.6rem;
   border-bottom: 1px solid var(--border-subtle);
+}
+
+.project-filter-select {
+  appearance: none;
+  -webkit-appearance: none;
+  flex: none;
+  width: auto;
+  max-width: 145px;
+  font-family: inherit;
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.25;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-alt)
+    url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="8" height="5" viewBox="0 0 8 5"><path d="M1 1l3 3 3-3" stroke="%238f8f9a" stroke-width="1.5" fill="none" stroke-linecap="round"/></svg>')
+    no-repeat right 0.45rem center;
+  color: var(--ink);
+  padding: 0.2rem 1.25rem 0.2rem 0.55rem;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.project-filter-select:hover {
+  background-color: var(--surface-hover);
+}
+
+.project-filter-select.active {
+  background-color: var(--blue-subtle);
+  border-color: transparent;
+  color: var(--blue);
+}
+
+.view-switcher {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0;
+  border-bottom: none;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: thin;

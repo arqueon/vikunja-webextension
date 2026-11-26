@@ -58,6 +58,7 @@
     openOptions: uiOpenOptions,
     showToast: uiShowToast,
     fillProjectSelect: uiFillProjectSelect,
+    projectOptions: uiProjectOptions,
     priorityLabel: uiPriorityLabel,
     duePresetDate: uiDuePresetDate,
     formatDateTimeLocal: uiFormatDateTimeLocal,
@@ -76,6 +77,8 @@
   const quickError = document.getElementById('quick-error');
   const sortBtn = document.getElementById('sort-btn');
   const sortMenu = document.getElementById('sort-menu');
+  const scopeBar = document.getElementById('scope-bar');
+  const projectFilterSelect = document.getElementById('project-filter');
   const viewSwitcher = document.getElementById('view-switcher');
   const addSiteBtn = document.getElementById('add-site');
   const openKanbanBtn = document.getElementById('open-kanban');
@@ -119,6 +122,7 @@
   let quickAddMode = PrefixMode.Default;
   let currentProjectId = null;
   let currentViewId = null;
+  let currentFilterProjectId = null;
   let activePreset = 'all'; // 'all' | 'due' | 'favorites'
   let showCompletedTasks = false;
   let expandedTaskId = null;
@@ -713,7 +717,12 @@
     taskEmpty.textContent = query ? t('noMatchingTasks', 'No matching tasks.') : t('noTasks', 'No tasks here yet.');
 
     const now = Date.now();
-    const showProject = currentViewId === null ? !prefs.defaultProjectId : true;
+    const showProject =
+      currentViewId !== null
+        ? true
+        : currentFilterProjectId !== null
+          ? projectDescendantIds(currentFilterProjectId).length > 0
+          : !prefs.defaultProjectId;
     visible.forEach((task) => {
       const isExpanded = expandedTaskId === task.id;
       const li = document.createElement('li');
@@ -1043,7 +1052,11 @@
   // Vikunja only orders by position through a project view, so manual sorting
   // needs a project or filter context; otherwise fall back to newest first.
   function projectContext() {
-    return currentViewId !== null ? currentViewId : prefs.defaultProjectId;
+    if (currentViewId !== null) return currentViewId;
+    if (currentFilterProjectId !== null && projectDescendantIds(currentFilterProjectId).length === 0) {
+      return currentFilterProjectId;
+    }
+    return prefs.defaultProjectId;
   }
 
   function effectiveSortParams() {
@@ -1081,13 +1094,27 @@
     if (currentViewId !== null) {
       opts.projectId = currentViewId;
     } else {
-      opts.filter = showCompletedTasks
+      const baseFilter = showCompletedTasks
         ? (prefs.customFilter || '')
         : (prefs.customFilter || 'done = false');
       if (activePreset === 'inbox' && inboxProjectId) {
+        opts.filter = baseFilter;
         opts.projectId = inboxProjectId;
-      } else if (prefs.defaultProjectId) {
-        opts.projectId = prefs.defaultProjectId;
+      } else if (currentFilterProjectId !== null) {
+        const descendants = projectDescendantIds(currentFilterProjectId);
+        if (descendants.length > 0) {
+          const allIds = [currentFilterProjectId, ...descendants].sort((a, b) => a - b);
+          const projectExpr = `project in ${allIds.join(', ')}`;
+          opts.filter = baseFilter ? `(${baseFilter}) && ${projectExpr}` : projectExpr;
+        } else {
+          opts.filter = baseFilter;
+          opts.projectId = currentFilterProjectId;
+        }
+      } else {
+        opts.filter = baseFilter;
+        if (prefs.defaultProjectId) {
+          opts.projectId = prefs.defaultProjectId;
+        }
       }
     }
     const sort = effectiveSortParams();
@@ -1191,8 +1218,67 @@
 
   // Saved filters show up in the /projects listing as pseudo-projects with
   // negative ids (id = filterID * -1 - 1). Real projects are always positive.
-  const realProjectList = () => [...projectsById.values()].filter((p) => p.id > 0);
+  const realProjectList = () => [...projectsById.values()].filter((p) => p.id > 0 && !p.is_archived);
   const filterViews = () => [...projectsById.values()].filter((p) => p.id < -1);
+
+  function projectDescendantIds(rootId) {
+    const childrenByParent = new Map();
+    for (const p of realProjectList()) {
+      const pid = p.parent_project_id ? Number(p.parent_project_id) : 0;
+      if (pid > 0) {
+        if (!childrenByParent.has(pid)) childrenByParent.set(pid, []);
+        childrenByParent.get(pid).push(Number(p.id));
+      }
+    }
+    const out = [];
+    const visited = new Set([Number(rootId)]);
+    const stack = [Number(rootId)];
+    while (stack.length) {
+      const cur = stack.pop();
+      for (const childId of childrenByParent.get(cur) || []) {
+        if (visited.has(childId)) continue;
+        visited.add(childId);
+        out.push(childId);
+        stack.push(childId);
+      }
+    }
+    return out;
+  }
+
+  function syncScopeBarVisibility() {
+    if (!scopeBar) return;
+    const projectHidden = !projectFilterSelect || projectFilterSelect.hidden;
+    scopeBar.hidden = projectHidden && viewSwitcher.hidden;
+  }
+
+  function renderProjectFilter() {
+    if (!projectFilterSelect) return;
+    projectFilterSelect.textContent = '';
+    const allOpt = document.createElement('option');
+    allOpt.value = '';
+    allOpt.textContent = t('allProjectsOption', 'All projects');
+    projectFilterSelect.appendChild(allOpt);
+
+    const opts = uiProjectOptions
+      ? uiProjectOptions([...projectsById.values()])
+      : realProjectList().map((p) => ({ id: Number(p.id), title: String(p.title || 'Untitled'), depth: 0 }));
+    for (const p of opts) {
+      const opt = document.createElement('option');
+      opt.value = String(p.id);
+      const indent = p.depth > 0 ? '\u00A0\u00A0'.repeat(p.depth) + '└ ' : '';
+      opt.textContent = indent + p.title;
+      projectFilterSelect.appendChild(opt);
+    }
+
+    projectFilterSelect.hidden = opts.length === 0;
+    projectFilterSelect.value = currentFilterProjectId !== null ? String(currentFilterProjectId) : '';
+    if (currentFilterProjectId !== null) {
+      projectFilterSelect.classList.add('active');
+    } else {
+      projectFilterSelect.classList.remove('active');
+    }
+    syncScopeBarVisibility();
+  }
 
   // Renders the view switcher row: an "All tasks" chip plus one chip per
   // favorited saved filter (server order). Hidden entirely when there are
@@ -1202,13 +1288,18 @@
     viewSwitcher.textContent = '';
     if (views.length === 0) {
       viewSwitcher.hidden = true;
+      syncScopeBarVisibility();
       return;
     }
     const addChip = (id, label) => {
       const chip = document.createElement('button');
       chip.type = 'button';
       chip.className = 'view-chip';
-      if (id === currentViewId) {
+      const isActive =
+        id === null
+          ? currentViewId === null && currentFilterProjectId === null
+          : id === currentViewId;
+      if (isActive) {
         chip.classList.add('active');
       }
       chip.textContent = label;
@@ -1219,17 +1310,49 @@
     addChip(null, t('viewAll', 'All tasks'));
     views.forEach((v) => addChip(v.id, v.title));
     viewSwitcher.hidden = false;
+    syncScopeBarVisibility();
   }
 
   async function setView(id) {
     const next = id === null ? null : Number(id);
-    if (next === currentViewId) return;
+    if (next === currentViewId && currentFilterProjectId === null) return;
     currentViewId = next;
+    currentFilterProjectId = null;
+    projectViews = null;
     try {
-      await api.storage.local.set({ lastViewId: next });
+      await api.storage.local.set({ lastViewId: next, lastFilterProjectId: null });
     } catch (e) {
       // Ignore storage failures; the choice still applies for this session.
     }
+    renderProjectFilter();
+    renderViewSwitcher();
+    try {
+      await refreshTasks();
+    } catch (e) {
+      uiShowToast(toastEl, t('couldNotReloadTasks', 'Could not reload tasks: $1', [e.message]), { error: true });
+    }
+  }
+
+  async function setFilterProject(id) {
+    const next = id ? Number(id) : null;
+    if (next === currentFilterProjectId && currentViewId === null) return;
+    currentFilterProjectId = next;
+    currentViewId = null;
+    projectViews = null;
+    if (next !== null && activePreset === 'inbox' && Number(next) !== Number(inboxProjectId)) {
+      activePreset = 'all';
+      document.querySelectorAll('.preset-chip').forEach((c) => {
+        if (c.getAttribute('data-preset') === 'all') c.classList.add('active');
+        else c.classList.remove('active');
+      });
+      saveDraftNow();
+    }
+    try {
+      await api.storage.local.set({ lastViewId: null, lastFilterProjectId: next });
+    } catch (e) {
+      // Ignore storage failures; the choice still applies for this session.
+    }
+    renderProjectFilter();
     renderViewSwitcher();
     try {
       await refreshTasks();
@@ -1282,10 +1405,21 @@
       quickAddMode = mode;
       projectsById = new Map(projects.map((pr) => [pr.id, pr]));
       resolveInboxProject();
-      const { lastViewId } = await api.storage.local.get({ lastViewId: null });
+      const { lastViewId, lastFilterProjectId } = await api.storage.local.get({
+        lastViewId: null,
+        lastFilterProjectId: null,
+      });
       if (lastViewId && projectsById.has(Number(lastViewId)) && Number(lastViewId) < -1) {
         currentViewId = Number(lastViewId);
+      } else if (
+        lastFilterProjectId &&
+        projectsById.has(Number(lastFilterProjectId)) &&
+        Number(lastFilterProjectId) > 0 &&
+        !projectsById.get(Number(lastFilterProjectId)).is_archived
+      ) {
+        currentFilterProjectId = Number(lastFilterProjectId);
       }
+      renderProjectFilter();
       renderViewSwitcher();
       quickTitle.placeholder = PLACEHOLDERS[quickAddMode] || t('quickAddPlaceholder', 'Add a task…');
       await resolveCurrentProject();
@@ -1883,7 +2017,16 @@
       const next = btn.getAttribute('data-preset') || 'all';
       // The Inbox preset scopes the server fetch itself, so entering or
       // leaving it needs a reload; the other presets filter locally.
-      const needsReload = next === 'inbox' || activePreset === 'inbox';
+      let needsReload = next === 'inbox' || activePreset === 'inbox';
+      if (next === 'inbox' && (currentViewId !== null || currentFilterProjectId !== null)) {
+        currentViewId = null;
+        currentFilterProjectId = null;
+        projectViews = null;
+        api.storage.local.set({ lastViewId: null, lastFilterProjectId: null }).catch(() => {});
+        renderProjectFilter();
+        renderViewSwitcher();
+        needsReload = true;
+      }
       document.querySelectorAll('.preset-chip').forEach((c) => c.classList.remove('active'));
       btn.classList.add('active');
       activePreset = next;
@@ -1897,6 +2040,13 @@
       }
     });
   });
+
+  if (projectFilterSelect) {
+    projectFilterSelect.addEventListener('change', (e) => {
+      const value = e.target && e.target.value !== undefined ? e.target.value : projectFilterSelect.value;
+      return setFilterProject(value);
+    });
+  }
 
   // Toggle completed tasks button
   if (toggleCompletedBtn) {

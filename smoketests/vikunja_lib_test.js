@@ -42,6 +42,8 @@ const listResponse = (page) => ({
   headers: { get: () => null },
   text: async () => JSON.stringify({ items: pageBody(page), page, per_page: 3, total: 6, total_pages: 2 }),
 });
+let duplicateFilterPages = false;
+let kanbanBucketPages = {};
 
 global.fetch = async (url, opts) => {
   calls.push({ url, opts });
@@ -83,10 +85,34 @@ global.fetch = async (url, opts) => {
     assert.equal(opts.method, 'POST', 'expected POST for assignee attach');
     return { ok: true, headers: { get: () => null }, text: async () => JSON.stringify(JSON.parse(opts.body)) };
   }
+  if (/^\/api\/v2\/projects\/-?\d+\/views\/-?\d+\/buckets\/tasks$/.test(path)) {
+    assert.equal(u.searchParams.get('per_page'), '200');
+    const body = kanbanBucketPages[page] || [];
+    return { ok: true, headers: { get: () => null }, text: async () => JSON.stringify({ items: body, total: body.length }) };
+  }
+  if (/^\/api\/v2\/projects\/-?\d+\/views\/-?\d+\/buckets\/\d+\/tasks$/.test(path)) {
+    assert.equal(opts.method, 'PUT', 'expected PUT for moveTaskToBucket');
+    const payload = JSON.parse(opts.body);
+    return {
+      ok: true,
+      headers: { get: () => null },
+      text: async () => JSON.stringify({ task_id: payload.task_id, task: { id: payload.task_id, done: true } }),
+    };
+  }
+  if (path.endsWith('/projects') && duplicateFilterPages) {
+    const items = page === 1
+      ? [{ id: 1, title: 'Inbox' }, { id: -6, title: 'GTD', is_favorite: true }]
+      : [{ id: 2, title: 'Casa' }, { id: -6, title: 'GTD', is_favorite: true }];
+    return {
+      ok: true,
+      headers: { get: () => null },
+      text: async () => JSON.stringify({ items, page, per_page: 2, total: 3, total_pages: 2 }),
+    };
+  }
   const isList = path.endsWith('/projects')
     || path.endsWith('/projects/3/tasks')
-    || /^\/api\/v2\/projects\/\d+\/views$/.test(path)
-    || /^\/api\/v2\/projects\/\d+\/views\/\d+\/tasks$/.test(path)
+    || /^\/api\/v2\/projects\/-?\d+\/views$/.test(path)
+    || /^\/api\/v2\/projects\/-?\d+\/views\/\d+\/tasks$/.test(path)
     || (path.endsWith('/tasks') && !path.endsWith('/projects/3/tasks'));
   if (isList) {
     assert.equal(u.searchParams.get('per_page'), '50', 'expected per_page=50');
@@ -291,6 +317,42 @@ const V = globalThis.VikunjaLib;
   const users = await V.searchProjectUsers(3, 'alice');
   assert.equal(users.length, 1);
   assert.equal(users[0].id, 7);
+
+  // listProjects deduplicates repeated negative-ID saved filters across pages.
+  duplicateFilterPages = true;
+  const dedupedProjects = await V.listProjects({ forceRefresh: true });
+  assert.deepStrictEqual(
+    dedupedProjects.map((p) => p.id),
+    [1, -6, 2],
+    'listProjects deduplicates repeated saved filters across pages',
+  );
+  duplicateFilterPages = false;
+
+  // listKanbanBuckets paginates via bucket.count without total_pages and populates bucket_id.
+  calls.length = 0;
+  kanbanBucketPages = {
+    1: [
+      { id: 20, title: 'Doing', position: 200, count: 1, tasks: [{ id: 501, title: 'In progress', bucket_id: 0 }] },
+      { id: 10, title: 'To-Do', position: 100, count: 2, tasks: [{ id: 500, title: 'First', bucket_id: 0 }] },
+    ],
+    2: [
+      { id: 20, title: 'Doing', position: 200, count: 1, tasks: [] },
+      { id: 10, title: 'To-Do', position: 100, count: 2, tasks: [{ id: 502, title: 'Second', bucket_id: 0 }] },
+    ],
+  };
+  const kBuckets = await V.listKanbanBuckets(-6, 847);
+  assert.equal(calls.length, 2, 'listKanbanBuckets fetches page 2 when bucket.count > collected');
+  assert.deepStrictEqual(kBuckets.map((b) => b.id), [10, 20], 'listKanbanBuckets sorts by position');
+  assert.deepStrictEqual(kBuckets[0].tasks.map((tk) => tk.id), [500, 502], 'accumulates tasks per bucket');
+  assert.equal(kBuckets[0].tasks[0].bucket_id, 10, 'populates missing/zero bucket_id from bucket');
+
+  // moveTaskToBucket uses PUT .../buckets/{bucket}/tasks with { task_id }.
+  calls.length = 0;
+  const moved = await V.moveTaskToBucket(-6, 847, 661, 500);
+  assert.equal(calls[0].url, 'https://vikunja.example/api/v2/projects/-6/views/847/buckets/661/tasks');
+  assert.equal(calls[0].opts.method, 'PUT');
+  assert.deepStrictEqual(JSON.parse(calls[0].opts.body), { task_id: 500 });
+  assert.equal(moved.task.done, true);
 
   console.log('ALL PASS');
 })().catch(e => { console.error('FAIL', e); process.exit(1); });

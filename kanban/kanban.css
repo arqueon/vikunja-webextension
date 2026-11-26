@@ -258,6 +258,10 @@ body {
   cursor: grabbing;
 }
 
+.kcard.readonly {
+  cursor: default;
+}
+
 .kcard.done .kcard-title {
   color: var(--muted);
   text-decoration: line-through;
@@ -294,6 +298,16 @@ body {
 .kcard-meta .task-tag {
   padding: 0.04rem 0.4rem;
   max-width: 110px;
+}
+
+.kcard-ident {
+  padding: 0.04rem 0.35rem;
+  border-radius: 3px;
+  background: var(--surface-alt);
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 600;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
 }
 
 .kcard-meta .task-due {

@@ -94,7 +94,17 @@
   </section>
 
   <section id="list" class="view" hidden>
-    <div id="view-switcher" class="view-switcher" hidden></div>
+    <div id="scope-bar" class="scope-bar">
+      <select
+        id="project-filter"
+        class="project-filter-select"
+        aria-label="Filter by project"
+        title="Filter by project or subproject"
+        data-i18n-aria-label="projectFilterAriaLabel"
+        data-i18n-title="projectFilterTitle"
+      ></select>
+      <div id="view-switcher" class="view-switcher" hidden></div>
+    </div>
     <div class="preset-filter-bar">
       <div class="preset-chips">
         <button type="button" class="preset-chip active" data-preset="all">

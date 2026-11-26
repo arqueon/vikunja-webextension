@@ -599,6 +599,39 @@
   "fieldView": {
     "message": "Ansicht"
   },
+  "fieldBoard": {
+    "message": "Board"
+  },
+  "kanbanModeGtd": {
+    "message": "GTD-Ansichten"
+  },
+  "kanbanModeGtdTitle": {
+    "message": "Gespeicherte GTD- und Filterboards mit ihren Kanban-Spalten"
+  },
+  "kanbanModeProjects": {
+    "message": "Projekte"
+  },
+  "kanbanModeProjectsTitle": {
+    "message": "Verschachtelte Projekte mit ihrer konfigurierten Kanban-Ansicht"
+  },
+  "kanbanModeTriage": {
+    "message": "In Projekt verschieben"
+  },
+  "kanbanModeTriageTitle": {
+    "message": "Spalten sind Projekte; Ablegen einer Karte verschiebt sie dorthin"
+  },
+  "kanbanNoKanbanView": {
+    "message": "Dieses Board hat keine Kanban-Ansicht in Vikunja konfiguriert."
+  },
+  "kanbanNoSavedViews": {
+    "message": "Keine gespeicherten Filter gefunden — erstelle oder favorisiere einen Filter in Vikunja."
+  },
+  "kanbanFilterBucketsNotice": {
+    "message": "Filterbasierte Kanban-Ansicht — Spalten sind automatisch und schreibgeschützt."
+  },
+  "kanbanContainerEmptyNotice": {
+    "message": "Dieses übergeordnete Projekt hat keine direkten Aufgaben — prüfe seine Unterprojekte oder den Tab GTD-Ansichten."
+  },
   "kanbanGroupViews": {
     "message": "Ansichten"
   },
@@ -658,5 +691,14 @@
   },
   "previewHtmlButton": {
     "message": "Zurück zur Vorschau"
+  },
+  "allProjectsOption": {
+    "message": "Alle Projekte"
+  },
+  "projectFilterAriaLabel": {
+    "message": "Nach Projekt filtern"
+  },
+  "projectFilterTitle": {
+    "message": "Aufgaben nach Projekt oder Unterprojekt filtern"
   }
 }

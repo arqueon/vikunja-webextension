@@ -91,32 +91,128 @@ function getById(id) {
 }
 
 const storage = new Map();
-const calls = { listProjectViews: [], listBuckets: [], listTasks: [], updateTask: [], completeTask: [] };
+// Legacy kanbanGroupMode must be ignored in favor of kanbanState.
+storage.set('kanbanGroupMode', 'projects');
 
+const calls = {
+  listProjectViews: [],
+  listKanbanBuckets: [],
+  moveTaskToBucket: [],
+  listTasks: [],
+  updateTask: [],
+  completeTask: [],
+};
+
+// Trabajo (3) appears BEFORE Autos (4, child of Casa 2) to verify pre-order
+// DFS tree sorting puts Autos directly after Casa, before Trabajo.
 const projects = [
   { id: 1, title: 'Inbox' },
   { id: 2, title: 'Casa', is_archived: false },
   { id: 3, title: 'Trabajo' },
   { id: 4, title: 'Autos', parent_project_id: 2 },
+  { id: 5, title: 'SinKanban' },
+  { id: -1, title: 'Favorites', is_favorite: true },
   { id: -5, title: 'GTD · Casa', is_favorite: true },
+  { id: -4, title: 'ANYTYPE · Pendientes', is_favorite: true },
   { id: -6, title: 'No favorito', is_favorite: false },
 ];
-const kanbanView = { id: 10, title: 'Tablero', view_kind: 'kanban' };
-const gtdFilterView = { id: 20, title: 'GTD', view_kind: 'kanban' };
-const buckets = [
-  { id: 101, title: 'To-Do', hex_color: '3a86ff' },
-  { id: 102, title: 'Doing', hex_color: 'fd8a09' },
-  { id: 103, title: 'Done', hex_color: '0ead69' },
-];
-const tasksFixture = [
-  { id: 701, title: 'Clasificar correo', project_id: 1, bucket_id: 101, done: false, labels: [{ title: 'correo', hex_color: '0d9488' }] },
-  { id: 702, title: 'Podar rosas', project_id: 1, bucket_id: 102, done: false, priority: 3 },
-  { id: 703, title: 'Ya resuelta', project_id: 1, bucket_id: 103, done: true },
-  { id: 704, title: 'Sin columna', project_id: 1, done: false },
+
+const viewsByProject = {
+  1: [{ id: 10, title: 'Kanban', view_kind: 'kanban', bucket_configuration_mode: 'manual', default_bucket_id: 101, done_bucket_id: 103 }],
+  2: [{ id: 12, title: 'Kanban', view_kind: 'kanban', bucket_configuration_mode: 'manual', default_bucket_id: 201, done_bucket_id: 203 }],
+  4: [{ id: 14, title: 'Kanban', view_kind: 'kanban', bucket_configuration_mode: 'manual', default_bucket_id: 401, done_bucket_id: 403 }],
+  5: [],
+  '-5': [{ id: 20, title: 'GTD', view_kind: 'kanban', bucket_configuration_mode: 'manual', default_bucket_id: 642, done_bucket_id: 661 }],
+  '-4': [
+    { id: 30, title: 'Kanban', view_kind: 'kanban', bucket_configuration_mode: 'manual', default_bucket_id: 301, done_bucket_id: 303 },
+    { id: 31, title: 'Casa', view_kind: 'kanban', bucket_configuration_mode: 'filter' },
+  ],
+};
+
+const bucketsByView = {
+  10: [
+    {
+      id: 101,
+      title: 'To-Do',
+      hex_color: '3a86ff',
+      position: 100,
+      count: 1,
+      tasks: [{ id: 701, title: 'Clasificar correo', project_id: 1, bucket_id: 101, done: false, identifier: '#1', labels: [{ title: 'correo', hex_color: '0d9488' }] }],
+    },
+    {
+      id: 102,
+      title: 'Doing',
+      hex_color: 'fd8a09',
+      position: 200,
+      count: 1,
+      tasks: [{ id: 702, title: 'Podar rosas', project_id: 1, bucket_id: 102, done: false, priority: 3 }],
+    },
+    {
+      id: 103,
+      title: 'Done',
+      hex_color: '0ead69',
+      position: 300,
+      count: 1,
+      tasks: [{ id: 703, title: 'Ya resuelta', project_id: 1, bucket_id: 103, done: true }],
+    },
+  ],
+  // Parent container project Casa (2) has 0 direct tasks (its task lives in Autos 4).
+  12: [
+    { id: 201, title: 'To-Do', position: 100, count: 0, tasks: [] },
+    { id: 202, title: 'Doing', position: 200, count: 0, tasks: [] },
+    { id: 203, title: 'Done', position: 300, count: 0, tasks: [] },
+  ],
+  20: [
+    {
+      id: 642,
+      title: 'Por aclarar',
+      position: 100,
+      count: 1,
+      tasks: [{ id: 801, title: 'Cambiar aceite', project_id: 4, bucket_id: 642, done: false, identifier: 'CASA-6' }],
+    },
+    {
+      id: 643,
+      title: 'Siguientes acciones',
+      position: 200,
+      count: 0,
+      tasks: [],
+    },
+    {
+      id: 661,
+      title: 'Hecho',
+      position: 300,
+      count: 0,
+      tasks: [],
+    },
+  ],
+  30: [
+    { id: 301, title: 'To-Do', position: 100, count: 0, tasks: [] },
+  ],
+  31: [
+    {
+      id: 0,
+      title: 'Autos',
+      position: 100,
+      count: 1,
+      tasks: [{ id: 801, title: 'Cambiar aceite', project_id: 4, bucket_id: 0, done: false, identifier: 'CASA-6' }],
+    },
+    {
+      id: 1,
+      title: 'Sin proyecto',
+      position: 200,
+      count: 0,
+      tasks: [],
+    },
+  ],
+};
+
+const globalTasksFixture = [
+  { id: 701, title: 'Clasificar correo', project_id: 1, done: false },
   { id: 705, title: 'Ficha del Vocho', project_id: 4, done: false },
   { id: 706, title: 'Turno de guardia', project_id: 3, done: false },
 ];
-const snapshot = () => JSON.parse(JSON.stringify(tasksFixture));
+
+const clone = (v) => JSON.parse(JSON.stringify(v));
 
 const VikunjaLib = {
   api: {
@@ -138,37 +234,40 @@ const VikunjaLib = {
   },
   getConfig: () => Promise.resolve({ baseUrl: 'https://vikunja.example' }),
   getPrefs: () => Promise.resolve({ defaultProjectId: null, dueToday: false, customFilter: '', theme: 'auto' }),
-  listProjects: () => Promise.resolve(projects),
+  listProjects: () => Promise.resolve(clone(projects)),
   listProjectViews: (projectId) => {
-    calls.listProjectViews.push(projectId);
-    // Casa (2) deliberately has no kanban view to exercise the fallback;
-    // the favorited saved filter (-5) is a board of its own.
-    if (Number(projectId) === 1) return Promise.resolve([kanbanView]);
-    if (Number(projectId) === -5) return Promise.resolve([gtdFilterView]);
-    return Promise.resolve([]);
+    calls.listProjectViews.push(Number(projectId));
+    return Promise.resolve(clone(viewsByProject[String(projectId)] || []));
   },
-  listBuckets: (projectId, viewId) => {
-    calls.listBuckets.push({ projectId, viewId });
-    return Promise.resolve(buckets);
+  listKanbanBuckets: (projectId, viewId) => {
+    calls.listKanbanBuckets.push({ projectId: Number(projectId), viewId: Number(viewId) });
+    return Promise.resolve(clone(bucketsByView[Number(viewId)] || []));
   },
+  moveTaskToBucket: (projectId, viewId, bucketId, taskId) => {
+    calls.moveTaskToBucket.push({
+      projectId: Number(projectId),
+      viewId: Number(viewId),
+      bucketId: Number(bucketId),
+      taskId: Number(taskId),
+    });
+    const viewList = viewsByProject[String(projectId)] || [];
+    const view = viewList.find((v) => Number(v.id) === Number(viewId));
+    const isDone = view && Number(view.done_bucket_id) === Number(bucketId);
+    return Promise.resolve({ task: { id: Number(taskId), done: Boolean(isDone) } });
+  },
+  listBuckets: () => Promise.resolve([]),
   listTasks: (opts) => {
     calls.listTasks.push(opts);
-    if (opts && opts.viewId) {
-      // View-scoped fetch: only the project's tasks with bucket_id.
-      return Promise.resolve(snapshot().filter((t) => Number(t.project_id) === Number(opts.projectId)));
-    }
-    return Promise.resolve(snapshot());
+    return Promise.resolve(clone(globalTasksFixture));
   },
   updateTask: (id, patch) => {
-    calls.updateTask.push({ id, patch });
-    const task = tasksFixture.find((t) => Number(t.id) === Number(id));
+    calls.updateTask.push({ id: Number(id), patch });
+    const task = globalTasksFixture.find((t) => Number(t.id) === Number(id));
     if (task) Object.assign(task, patch);
     return Promise.resolve(Object.assign({}, task, patch));
   },
   completeTask: (id, done) => {
-    calls.completeTask.push({ id, done });
-    const task = tasksFixture.find((t) => Number(t.id) === Number(id));
-    if (task) task.done = Boolean(done);
+    calls.completeTask.push({ id: Number(id), done: Boolean(done) });
     return Promise.resolve();
   },
 };
@@ -199,12 +298,11 @@ const errors = [];
 const assert = (cond, msg) => {
   if (!cond) errors.push(msg);
 };
-const wait = () => new Promise((r) => { setTimeout(r, 20); });
+const wait = () => new Promise((r) => { setTimeout(r, 25); });
 const flush = () => new Promise((r) => { setTimeout(r, 0); });
 
-const columnTitles = () => ids['board'].childNodes.map((c) => c.childNodes[0]);
 const colTitle = (i) => {
-  const head = columnTitles()[i];
+  const head = ids['board'].childNodes[i].childNodes[0];
   const titleEl = head.childNodes.find((n) => String(n.className).includes('kcol-title'));
   return titleEl ? titleEl.textContent : '';
 };
@@ -213,129 +311,134 @@ const cardsOf = (i) => {
   const body = col.childNodes[col.childNodes.length - 1];
   return body.childNodes.filter((c) => c.getAttribute && c.getAttribute('data-task-id') !== null);
 };
+const findCardMetaTexts = (card) => {
+  const body = card.childNodes[1];
+  const meta = body.childNodes.find((n) => String(n.className).includes('kcard-meta'));
+  return meta ? meta.childNodes.map((n) => n.textContent) : [];
+};
 
 (async () => {
   eval(fs.readFileSync(path.join(root, 'kanban/kanban.js'), 'utf8'));
   await wait();
 
-  // --- Defaults: Inbox project, views grouping with the project's buckets ---
+  // 1. Default open: projects mode on Inbox, real To-Do / Doing / Done columns, ignores legacy kanbanGroupMode.
+  assert(ids['mode-projects'].classList.contains('active'), 'opens in projects mode (ignores legacy kanbanGroupMode)');
   assert(ids['project-select'].value === '1', 'board opens on Inbox, got ' + ids['project-select'].value);
-  const selectTexts = ids['project-select'].childNodes.map((o) => o.textContent);
-  assert(selectTexts.includes('⚑ GTD · Casa'), 'favorited saved filters offered as boards, got ' + JSON.stringify(selectTexts));
-  assert(!selectTexts.some((txt) => txt.includes('No favorito')), 'non-favorited filters left out');
-  assert(ids['group-views'].classList.contains('active'), 'views grouping active by default');
-  assert(ids['view-control'].hidden === true, 'view selector hidden with a single kanban view');
-  const viewsFetch = calls.listTasks[calls.listTasks.length - 1];
-  assert(viewsFetch.projectId === 1 && viewsFetch.viewId === 10, 'view-scoped task fetch, got ' + JSON.stringify(viewsFetch));
-  assert(ids['board'].childNodes.length === 4, '3 buckets + orphan column, got ' + ids['board'].childNodes.length);
+  assert(calls.listKanbanBuckets.some((c) => c.projectId === 1 && c.viewId === 10), 'loads real buckets/tasks for Inbox view 10');
+  assert(ids['board'].childNodes.length === 3, '3 real buckets, got ' + ids['board'].childNodes.length);
   assert(colTitle(0) === 'To-Do' && colTitle(1) === 'Doing' && colTitle(2) === 'Done', 'bucket titles as columns');
-  assert(cardsOf(0).length === 1 && cardsOf(0)[0].getAttribute('data-task-id') === '701', 'task grouped into its bucket');
-  assert(cardsOf(3).length === 1 && colTitle(3) === 'No column', 'bucketless tasks kept visible in a trailing column');
+  assert(cardsOf(0).length === 1 && cardsOf(0)[0].getAttribute('data-task-id') === '701', '701 in To-Do');
 
-  // --- Checkbox completes a card ---
-  const card701 = cardsOf(0)[0];
-  const check701 = card701.childNodes[0].childNodes[0];
-  check701.checked = true;
-  await check701.listeners['change'][0](check701);
+  // 2. True pre-order tree order in #project-select (Autos right after Casa, before Trabajo).
+  const projTexts = ids['project-select'].childNodes.map((o) => o.textContent);
   assert(
-    calls.completeTask.length === 1 && calls.completeTask[0].id === 701 && calls.completeTask[0].done === true,
-    'card checkbox completes the task',
+    projTexts.indexOf('Casa') !== -1 &&
+    projTexts.indexOf('\u00A0\u00A0└ Autos') === projTexts.indexOf('Casa') + 1 &&
+    projTexts.indexOf('Trabajo') > projTexts.indexOf('\u00A0\u00A0└ Autos'),
+    'pre-order project tree in #project-select, got ' + JSON.stringify(projTexts),
   );
 
-  // --- → nudge moves 701 to the next bucket ---
+  // 3. → nudge and drag-drop in manual kanban call moveTaskToBucket; dropping into done_bucket_id marks done=true.
+  const card701 = cardsOf(0)[0];
   const moveWrap701 = card701.childNodes[card701.childNodes.length - 1];
   const rightBtn = moveWrap701.childNodes.find((b) => b.textContent === '→');
   await rightBtn.listeners['click'][0]();
   await flush();
   assert(
-    calls.updateTask.length === 1 && calls.updateTask[0].id === 701 && calls.updateTask[0].patch.bucket_id === 102,
-    '→ nudge PATCHes the next bucket, got ' + JSON.stringify(calls.updateTask[0] || null),
+    calls.moveTaskToBucket.length === 1 &&
+    calls.moveTaskToBucket[0].projectId === 1 &&
+    calls.moveTaskToBucket[0].viewId === 10 &&
+    calls.moveTaskToBucket[0].bucketId === 102 &&
+    calls.moveTaskToBucket[0].taskId === 701,
+    '→ nudge calls moveTaskToBucket, got ' + JSON.stringify(calls.moveTaskToBucket[0]),
   );
-  const doingIds = cardsOf(1).map((c) => String(c.getAttribute('data-task-id')));
-  assert(doingIds.includes('701'), 'card re-rendered in Doing, got ' + JSON.stringify(doingIds));
+  assert(cardsOf(1).some((c) => c.getAttribute('data-task-id') === '701'), '701 moved to Doing');
 
-  // --- Drag & drop between buckets ---
-  const card702 = cardsOf(1).find((c) => c.getAttribute('data-task-id') === '702') || cardsOf(0)[0];
+  const card702 = cardsOf(1).find((c) => c.getAttribute('data-task-id') === '702');
   card702.listeners['dragstart'][0]();
   const doneCol = ids['board'].childNodes[2];
   await doneCol.listeners['drop'][0]({ preventDefault() {} });
   await flush();
-  const lastMove = calls.updateTask[calls.updateTask.length - 1];
-  assert(lastMove.patch.bucket_id === 103, 'drop PATCHes the target bucket, got ' + JSON.stringify(lastMove.patch));
+  const lastBucketMove = calls.moveTaskToBucket[calls.moveTaskToBucket.length - 1];
+  assert(lastBucketMove.bucketId === 103 && lastBucketMove.taskId === 702, 'drop calls moveTaskToBucket for Done');
+  const card702Done = cardsOf(2).find((c) => c.getAttribute('data-task-id') === '702');
+  assert(card702Done && card702Done.classList.contains('done'), 'dropping into done_bucket_id marks card done');
 
-  // --- Pending-only toggle filters done cards ---
-  const pendingBefore = cardsOf(2).length;
-  assert(pendingBefore >= 1, 'done task visible by default (todas con toggle)');
+  // 4. Checkbox completion calls completeTask and moves card to done_bucket_id.
+  const card701Doing = cardsOf(1).find((c) => c.getAttribute('data-task-id') === '701');
+  const check701 = card701Doing.childNodes[0].childNodes[0];
+  check701.checked = true;
+  await check701.listeners['change'][0](check701);
+  assert(calls.completeTask.length === 1 && calls.completeTask[0].id === 701 && calls.completeTask[0].done === true, 'checkbox completes task');
+  assert(cardsOf(2).some((c) => c.getAttribute('data-task-id') === '701'), 'completed card moved into Done bucket locally');
+
+  // 5. Pending-only toggle hides completed cards without refetching.
+  const fetchesBeforePending = calls.listKanbanBuckets.length;
   ids['pending-toggle'].listeners['click'][0]();
-  assert(
-    ids['board'].childNodes.every((c) => {
-      const body = c.childNodes[c.childNodes.length - 1];
-      return body.childNodes.every((n) => n.getAttribute('data-task-id') === null || !String(n.getAttribute('data-task-id')).includes(''));
-    }) || true,
-    'board re-rendered with the toggle',
-  );
-  const visibleIds = [];
-  ids['board'].childNodes.forEach((c) => {
-    const body = c.childNodes[c.childNodes.length - 1];
-    body.childNodes.forEach((n) => {
-      const tid = n.getAttribute && n.getAttribute('data-task-id');
-      if (tid !== null && tid !== undefined) visibleIds.push(String(tid));
-    });
-  });
-  assert(!visibleIds.includes('703'), 'completed task 703 hidden with pending-only, got ' + JSON.stringify(visibleIds));
+  assert(calls.listKanbanBuckets.length === fetchesBeforePending, 'pending toggle filters locally');
+  assert(cardsOf(2).length === 0, 'completed cards hidden in Done when pending-only is active');
   ids['pending-toggle'].listeners['click'][0]();
 
-  // --- Projects grouping: only projects with tasks, Inbox first, leaf titles ---
-  ids['group-projects'].listeners['click'][0]();
+  // 6. Switching to Vistas GTD (mode-gtd): saved filters only, identifier badge, moveTaskToBucket(-5, 20, ...).
+  ids['mode-gtd'].listeners['click'][0]();
   await wait();
-  const projectsFetch = calls.listTasks[calls.listTasks.length - 1];
-  assert(!projectsFetch.projectId && !projectsFetch.viewId, 'projects mode fetches the global list, got ' + JSON.stringify(projectsFetch));
-  assert(ids['board'].childNodes.length === 3, 'Inbox + projects with tasks only, got ' + ids['board'].childNodes.length);
-  assert(colTitle(0) === 'Inbox', 'Inbox column first, got ' + colTitle(0));
-  assert(colTitle(1) === 'Autos' && colTitle(2) === 'Trabajo', 'leaf titles in hierarchy order, got ' + colTitle(1) + ' / ' + colTitle(2));
-  const autosTitleEl = ids['board'].childNodes[1].childNodes[0].childNodes.find((n) => String(n.className).includes('kcol-title'));
-  assert(autosTitleEl && autosTitleEl.title === 'Casa › Autos', 'full path kept as the column tooltip, got ' + JSON.stringify(autosTitleEl && autosTitleEl.title));
-  assert(!columnTitles().some((h) => h.childNodes.some((n) => n.textContent === 'Casa')), 'empty parent project has no column');
-  assert(storage.get('kanbanGroupMode') === 'projects', 'grouping choice persisted');
-
-  // Drop a card from Inbox onto Trabajo -> project move
-  const inboxCard = cardsOf(0)[0];
-  inboxCard.listeners['dragstart'][0]();
-  const trabajoCol = ids['board'].childNodes[2];
-  await trabajoCol.listeners['drop'][0]({ preventDefault() {} });
+  const gtdOptions = ids['project-select'].childNodes.map((o) => o.value);
+  assert(gtdOptions.includes('-5') && gtdOptions.includes('-4'), 'GTD mode lists saved filters');
+  assert(!gtdOptions.includes('-1') && !gtdOptions.includes('-6') && !gtdOptions.includes('1'), 'excludes -1, non-favorite filters, and real projects');
+  assert(ids['project-select'].value === '-5', 'GTD filter listed first');
+  assert(colTitle(0) === 'Por aclarar' && colTitle(1) === 'Siguientes acciones', 'GTD buckets loaded');
+  const gtdCard = cardsOf(0)[0];
+  assert(findCardMetaTexts(gtdCard).includes('CASA-6'), 'identifier badge shown on GTD card');
+  const gtdMoveRight = gtdCard.childNodes[gtdCard.childNodes.length - 1].childNodes.find((b) => b.textContent === '→');
+  await gtdMoveRight.listeners['click'][0]();
   await flush();
-  const projectMove = calls.updateTask[calls.updateTask.length - 1];
-  assert(projectMove.patch.project_id === 3, 'projects-mode drop PATCHes project_id, got ' + JSON.stringify(projectMove.patch));
+  const gtdMove = calls.moveTaskToBucket[calls.moveTaskToBucket.length - 1];
+  assert(gtdMove.projectId === -5 && gtdMove.viewId === 20 && gtdMove.bucketId === 643, 'GTD move uses negative filter id + view 20');
 
-  // --- Saved filters (GTD · …) are boards of their own ---
-  ids['group-views'].listeners['click'][0]();
+  // 7. Filter-based kanban view (bucket_configuration_mode: 'filter'): read-only notice, non-draggable, no arrows.
+  ids['project-select'].listeners['change'][0]({ target: { value: '-4' } });
   await wait();
-  ids['project-select'].listeners['change'][0]({ target: { value: '-5' } });
+  assert(ids['view-control'].hidden === false, 'view selector shown for multi-kanban board ANYTYPE · Pendientes');
+  ids['view-select'].listeners['change'][0]({ target: { value: '31' } });
   await wait();
-  assert(ids['group-views'].classList.contains('active'), 'favorited filter keeps the views grouping');
-  const filterFetch = calls.listTasks[calls.listTasks.length - 1];
-  assert(filterFetch.projectId === -5 && filterFetch.viewId === 20, 'filter board fetches its kanban view tasks, got ' + JSON.stringify(filterFetch));
-  assert(colTitle(0) === 'To-Do', 'filter kanban buckets as columns, got ' + colTitle(0));
-  assert(calls.listBuckets.some((c) => Number(c.projectId) === -5), 'buckets fetched for the saved filter');
+  assert(ids['board-notice'].hidden === false, 'filter-based kanban shows read-only notice');
+  const roCard = cardsOf(0)[0];
+  assert(roCard.draggable === false && roCard.classList.contains('readonly'), 'filter-mode card is non-draggable/readonly');
+  assert(!roCard.childNodes.some((c) => String(c.className).includes('kcard-move')), 'no move arrows on readonly card');
+  const movesBeforeRoDrop = calls.moveTaskToBucket.length;
+  const roCol1 = ids['board'].childNodes[1];
+  assert(!roCol1.listeners['drop'], 'readonly columns do not bind drop handler');
+  assert(calls.moveTaskToBucket.length === movesBeforeRoDrop, 'filter-mode view cannot move tasks');
 
-  // --- A project without kanban view falls back to project columns ---
-  ids['group-views'].listeners['click'][0]();
+  // 8. Parent container project with 0 direct tasks shows kanbanContainerEmptyNotice.
+  ids['mode-projects'].listeners['click'][0]();
   await wait();
   ids['project-select'].listeners['change'][0]({ target: { value: '2' } });
   await wait();
-  assert(ids['group-projects'].classList.contains('active'), 'no kanban view -> grouping falls back to projects');
-  assert(ids['board-notice'].hidden === false, 'fallback notice shown');
-  assert(calls.listBuckets.every((c) => Number(c.projectId) !== 2), 'no bucket fetch for the viewless project');
+  assert(ids['mode-projects'].classList.contains('active'), 'stays in projects mode on empty container project');
+  assert(ids['board-notice'].hidden === false && ids['board-notice'].textContent.includes('parent project'), 'shows parent container notice, got ' + ids['board-notice'].textContent);
 
-  // Switching back to Inbox keeps the (persisted) projects grouping until the
-  // user picks Views again — then the kanban board returns.
-  ids['project-select'].listeners['change'][0]({ target: { value: '1' } });
+  // 9. Project with no kanban views shows kanbanNoKanbanView notice without switching to triage.
+  ids['project-select'].listeners['change'][0]({ target: { value: '5' } });
   await wait();
-  assert(ids['group-projects'].classList.contains('active'), 'grouping stays on projects after switching project');
-  ids['group-views'].listeners['click'][0]();
+  assert(ids['mode-projects'].classList.contains('active'), 'no kanban views stays in projects mode');
+  assert(ids['board-notice'].hidden === false && ids['board-notice'].textContent.includes('no kanban view'), 'shows no-kanban notice, got ' + ids['board-notice'].textContent);
+
+  // 10. Mover a proyecto (mode-triage): hides target/view controls, Inbox first, drop PATCHes project_id.
+  ids['mode-triage'].listeners['click'][0]();
   await wait();
-  assert(ids['group-views'].classList.contains('active'), 'views grouping restored on demand on Inbox');
-  assert(colTitle(0) === 'To-Do', 'buckets back as columns');
+  assert(ids['target-control'].hidden === true && ids['view-control'].hidden === true, 'triage mode hides target and view controls');
+  assert(colTitle(0) === 'Inbox' && colTitle(1) === 'Autos' && colTitle(2) === 'Trabajo', 'triage columns show Inbox + projects with tasks in pre-order');
+  const triageInboxCard = cardsOf(0)[0];
+  triageInboxCard.listeners['dragstart'][0]();
+  const trabajoCol = ids['board'].childNodes[2];
+  await trabajoCol.listeners['drop'][0]({ preventDefault() {} });
+  await flush();
+  assert(calls.updateTask.length === 1 && calls.updateTask[0].patch.project_id === 3, 'triage drop PATCHes project_id');
+
+  // 11. Persists kanbanState.
+  const persisted = storage.get('kanbanState');
+  assert(persisted && persisted.mode === 'triage' && persisted.gtdId === -4 && persisted.projectId === 5, 'persists kanbanState, got ' + JSON.stringify(persisted));
 
   if (errors.length) {
     console.log('FAIL');

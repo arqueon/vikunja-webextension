@@ -1,12 +1,10 @@
-// Kanban triage panel. Two groupings (gate 2026-11-25):
-//   - "views": columns are the buckets of the project's own kanban view
-//     (To-Do / Doing / Done…); dropping a card PATCHes bucket_id.
-//   - "projects": columns are the destination projects; dropping a card
-//     PATCHes project_id. Used as the fallback when the project has no
-//     kanban view.
-// The panel opens on the Inbox project by default, shows every task (with a
-// pending-only toggle), and each card can be completed, dragged, nudged with
-// ←/→ and opened in the web app.
+// Kanban triage panel. Three modes:
+//   - "gtd": saved filters (GTD · …, ANYTYPE · Pendientes…) loaded with their
+//     real Vikunja kanban view (buckets/tasks + PUT .../buckets/{bucket}/tasks).
+//   - "projects": nested projects in pre-order hierarchy loaded with their own
+//     real kanban view (To-Do / Doing / Done…).
+//   - "triage": cross-project columns (Inbox + projects with tasks); dropping
+//     a card PATCHes project_id.
 (() => {
   'use strict';
 
@@ -19,6 +17,8 @@
     listProjects,
     listProjectViews,
     listBuckets,
+    listKanbanBuckets,
+    moveTaskToBucket,
     listTasks,
     completeTask,
     updateTask,
@@ -27,11 +27,14 @@
   const uiShowToast = window.UiLib ? window.UiLib.showToast : () => {};
   const uiProjectOptions = window.UiLib ? window.UiLib.projectOptions : null;
 
+  const targetControl = document.getElementById('target-control');
+  const targetLabel = document.getElementById('target-label');
   const projectSelect = document.getElementById('project-select');
   const viewSelect = document.getElementById('view-select');
   const viewControl = document.getElementById('view-control');
-  const groupViewsBtn = document.getElementById('group-views');
-  const groupProjectsBtn = document.getElementById('group-projects');
+  const modeGtdBtn = document.getElementById('mode-gtd');
+  const modeProjectsBtn = document.getElementById('mode-projects');
+  const modeTriageBtn = document.getElementById('mode-triage');
   const pendingToggle = document.getElementById('pending-toggle');
   const refreshBtn = document.getElementById('refresh');
   const boardEl = document.getElementById('board');
@@ -40,17 +43,20 @@
   const toastEl = document.getElementById('toast');
 
   const SVG_NS = 'http://www.w3.org/2000/svg';
+  const STATE_KEY = 'kanbanState';
 
   let baseUrl = '';
   let projects = [];
+  let mode = 'projects'; // 'gtd' | 'projects' | 'triage'
+  let currentGtdId = null;
   let currentProjectId = null;
   let kanbanViews = [];
   let currentViewId = null;
-  let buckets = [];
-  let tasks = [];
-  let groupMode = 'views'; // 'views' | 'projects'
+  let currentView = null;
+  let bucketColumns = [];
+  let triageTasks = [];
   let pendingOnly = false;
-  let busy = false;
+  let loadSeq = 0;
   let draggingTaskId = null;
 
   function applyTheme(theme) {
@@ -77,58 +83,130 @@
     return projects.filter((p) => p && Number(p.id) > 0 && !p.is_archived);
   }
 
-  // Q3: the board opens on the Inbox project, wherever it lives.
+  function nestedProjects() {
+    if (uiProjectOptions) {
+      return uiProjectOptions(projects);
+    }
+    return realProjects().map((p) => ({
+      id: Number(p.id),
+      title: String(p.title || 'Untitled'),
+      path: String(p.title || 'Untitled'),
+      depth: 0,
+      parentId: Number(p.parent_project_id) || 0,
+      hasChildren: false,
+    }));
+  }
+
+  function savedFilters() {
+    const all = projects.filter((p) => p && Number(p.id) < -1);
+    const favs = all.filter((p) => p.is_favorite);
+    const list = favs.length ? favs : all;
+    return list.slice().sort((a, b) => {
+      const ag = String(a.title || '').startsWith('GTD') ? 0 : 1;
+      const bg = String(b.title || '').startsWith('GTD') ? 0 : 1;
+      return ag - bg;
+    });
+  }
+
   function inboxProjectId() {
     const inbox = realProjects().find(
       (p) => (p.title || '').trim().toLowerCase() === 'inbox',
     );
-    return inbox ? inbox.id : null;
+    return inbox ? Number(inbox.id) : null;
+  }
+
+  function initialGtdId() {
+    const first = savedFilters()[0];
+    return first ? Number(first.id) : null;
   }
 
   function initialProjectId(prefs) {
     const inbox = inboxProjectId();
     if (inbox) return inbox;
-    if (prefs && prefs.defaultProjectId) return Number(prefs.defaultProjectId);
-    const first = realProjects()[0];
-    return first ? first.id : null;
+    if (prefs && prefs.defaultProjectId) {
+      const def = Number(prefs.defaultProjectId);
+      if (realProjects().some((p) => Number(p.id) === def)) return def;
+    }
+    const first = nestedProjects()[0];
+    return first ? Number(first.id) : null;
   }
 
-  // Vikunja's view model calls the kind `view_kind` (list/gantt/table/
-  // kanban); older payloads and mocks may carry `type`, so match both.
   function isKanbanView(v) {
     const kind = String((v && (v.view_kind || v.view_mode || v.type)) || '').toLowerCase();
     return kind === 'kanban';
   }
 
-  function fillProjectSelect(selectedId) {
-    projectSelect.textContent = '';
-    const opts = uiProjectOptions ? uiProjectOptions(projects) : null;
-    if (opts) {
-      // Hierarchy-aware: children indent under their parents like the
-      // popup's project selects. Saved filters (GTD · …) join at the end:
-      // they are boards of their own, with kanban views and buckets.
-      for (const p of opts) {
-        const option = document.createElement('option');
-        option.value = String(p.id);
-        const indent = p.depth > 0 ? '\u00A0\u00A0'.repeat(p.depth) + '└ ' : '';
-        option.textContent = indent + p.title;
-        projectSelect.appendChild(option);
-      }
+  function isFilterModeView() {
+    return String((currentView && currentView.bucket_configuration_mode) || '').toLowerCase() === 'filter';
+  }
+
+  function persistState() {
+    api.storage.local
+      .set({
+        [STATE_KEY]: {
+          mode,
+          gtdId: currentGtdId,
+          projectId: currentProjectId,
+        },
+      })
+      .catch(() => {});
+  }
+
+  function setMode(nextMode, { silent = false } = {}) {
+    if (nextMode === 'gtd' || nextMode === 'triage') {
+      mode = nextMode;
     } else {
-      for (const p of realProjects()) {
+      mode = 'projects';
+    }
+    modeGtdBtn.classList.toggle('active', mode === 'gtd');
+    modeProjectsBtn.classList.toggle('active', mode === 'projects');
+    modeTriageBtn.classList.toggle('active', mode === 'triage');
+    modeGtdBtn.setAttribute('aria-pressed', String(mode === 'gtd'));
+    modeProjectsBtn.setAttribute('aria-pressed', String(mode === 'projects'));
+    modeTriageBtn.setAttribute('aria-pressed', String(mode === 'triage'));
+    if (!silent) {
+      persistState();
+    }
+  }
+
+  function fillTargetSelect() {
+    if (mode === 'triage') {
+      targetControl.hidden = true;
+      viewControl.hidden = true;
+      return;
+    }
+    targetControl.hidden = false;
+    projectSelect.textContent = '';
+
+    if (mode === 'gtd') {
+      targetLabel.textContent = t('fieldBoard', 'Board');
+      const filters = savedFilters();
+      for (const f of filters) {
         const option = document.createElement('option');
-        option.value = String(p.id);
-        option.textContent = p.title || 'Untitled';
+        option.value = String(f.id);
+        option.textContent = f.title || 'Filter';
         projectSelect.appendChild(option);
       }
+      if (currentGtdId === null || !filters.some((f) => Number(f.id) === Number(currentGtdId))) {
+        currentGtdId = filters[0] ? Number(filters[0].id) : null;
+      }
+      projectSelect.value = currentGtdId !== null ? String(currentGtdId) : '';
+      return;
     }
-    for (const f of projects.filter((p) => p && Number(p.id) < -1 && p.is_favorite)) {
+
+    targetLabel.textContent = t('fieldProject', 'Project');
+    const opts = nestedProjects();
+    for (const p of opts) {
       const option = document.createElement('option');
-      option.value = String(f.id);
-      option.textContent = `⚑ ${f.title || 'Filter'}`;
+      option.value = String(p.id);
+      const indent = p.depth > 0 ? '\u00A0\u00A0'.repeat(p.depth) + '└ ' : '';
+      option.textContent = indent + p.title;
       projectSelect.appendChild(option);
     }
-    projectSelect.value = String(selectedId);
+    if (currentProjectId === null || !opts.some((p) => Number(p.id) === Number(currentProjectId))) {
+      currentProjectId = opts[0] ? Number(opts[0].id) : null;
+    }
+    projectSelect.value = currentProjectId !== null ? String(currentProjectId) : '';
   }
 
   function fillViewSelect() {
@@ -140,23 +218,10 @@
       viewSelect.appendChild(opt);
     }
     viewControl.hidden = kanbanViews.length < 2;
-    viewSelect.value = String(currentViewId);
+    viewSelect.value = currentViewId !== null ? String(currentViewId) : '';
   }
 
-  function setGroupMode(mode, { silent = false } = {}) {
-    groupMode = mode === 'projects' ? 'projects' : 'views';
-    groupViewsBtn.classList.toggle('active', groupMode === 'views');
-    groupProjectsBtn.classList.toggle('active', groupMode === 'projects');
-    groupViewsBtn.setAttribute('aria-pressed', String(groupMode === 'views'));
-    groupProjectsBtn.setAttribute('aria-pressed', String(groupMode === 'projects'));
-    if (!silent) {
-      api.storage.local
-        .set({ kanbanGroupMode: groupMode })
-        .catch(() => {});
-    }
-  }
-
-  // --- Task helpers (shared shape with the popup rows) ---
+  // --- Task helpers ---
 
   function hasDueDate(dateStr) {
     if (!dateStr) return false;
@@ -204,82 +269,62 @@
     return label;
   }
 
+  function projectTitleForTask(task) {
+    const proj = projects.find((p) => Number(p.id) === Number(task.project_id));
+    return proj && proj.title ? String(proj.title) : '';
+  }
+
+  function cardIdentifierText(task) {
+    const raw = task && task.identifier ? String(task.identifier).trim() : '';
+    if (raw && !raw.startsWith('#')) {
+      return raw;
+    }
+    if (mode === 'gtd') {
+      return projectTitleForTask(task) || raw;
+    }
+    return '';
+  }
+
   // --- Board model ---
 
-  function visibleTasks() {
-    return pendingOnly ? tasks.filter((task) => !task.done) : tasks;
-  }
-
-  // Views mode: one column per bucket. Tasks carry bucket_id only inside a
-  // kanban view, which is exactly how we fetched them.
   function columnsForViews() {
-    const byBucket = new Map();
-    for (const task of visibleTasks()) {
-      const key = task.bucket_id !== undefined ? Number(task.bucket_id) : null;
-      if (!byBucket.has(key)) byBucket.set(key, []);
-      byBucket.get(key).push(task);
-    }
-    const columns = buckets.map((b) => ({
-      key: `b-${b.id}`,
-      id: b.id,
-      kind: 'bucket',
-      title: b.title || t('kanbanColumnFallback', 'Column'),
-      hexColor: b.hex_color,
-      tasks: byBucket.get(Number(b.id)) || [],
-    }));
-    // Tasks that somehow lost their bucket: keep them visible in a trailing
-    // column so they are never silently dropped.
-    const orphans = byBucket.get(null) || [];
-    if (orphans.length) {
-      columns.push({
-        key: 'b-none',
-        id: null,
+    const readOnly = isFilterModeView();
+    return bucketColumns.map((b) => {
+      const list = Array.isArray(b.tasks) ? b.tasks : [];
+      return {
+        key: `b-${b.id}`,
+        id: b.id,
         kind: 'bucket',
-        title: t('kanbanNoBucket', 'No column'),
-        hexColor: '',
-        tasks: orphans,
-      });
-    }
-    return columns;
+        title: b.title || t('kanbanColumnFallback', 'Column'),
+        hexColor: b.hex_color,
+        readOnly,
+        tasks: pendingOnly ? list.filter((tk) => !tk.done) : list,
+      };
+    });
   }
 
-  // Projects mode: columns are the projects that actually carry tasks,
-  // plus Inbox (always first, the triage entry point). Leaf titles only —
-  // the hierarchy shows in the order (and in the column tooltip); equal
-  // leaf names under different parents get the parent in parentheses.
   function columnsForProjects() {
+    const visible = pendingOnly ? triageTasks.filter((tk) => !tk.done) : triageTasks;
     const byProject = new Map();
-    for (const task of visibleTasks()) {
+    for (const task of visible) {
       const key = Number(task.project_id);
       if (!byProject.has(key)) byProject.set(key, []);
       byProject.get(key).push(task);
     }
     const inboxId = inboxProjectId();
-    let ordered;
-    if (uiProjectOptions) {
-      ordered = uiProjectOptions(projects)
-        .filter((p) => Number(p.id) === Number(inboxId) || byProject.has(Number(p.id)))
-        .sort((a, b) => {
-          const ai = Number(a.id) === Number(inboxId) ? 0 : 1;
-          const bi = Number(b.id) === Number(inboxId) ? 0 : 1;
-          if (ai !== bi) return ai - bi;
-          return String(a.path).localeCompare(String(b.path));
-        });
-    } else {
-      ordered = realProjects()
-        .filter((p) => Number(p.id) === Number(inboxId) || byProject.has(Number(p.id)))
-        .slice()
-        .sort((a, b) => {
-          const ai = Number(a.id) === Number(inboxId) ? 0 : 1;
-          const bi = Number(b.id) === Number(inboxId) ? 0 : 1;
-          if (ai !== bi) return ai - bi;
-          return String(a.title).localeCompare(String(b.title));
-        });
-    }
+    const ordered = nestedProjects()
+      .filter((p) => Number(p.id) === Number(inboxId) || byProject.has(Number(p.id)))
+      .slice()
+      .sort((a, b) => {
+        const ai = Number(a.id) === Number(inboxId) ? 0 : 1;
+        const bi = Number(b.id) === Number(inboxId) ? 0 : 1;
+        return ai - bi;
+      });
+
     const leaves = ordered.map((p) => String(p.title || '').trim().toLowerCase());
     return ordered.map((p) => {
       const leaf = String(p.title || 'Untitled');
-      const duplicated = leaves.filter((l) => l === String(p.title || '').trim().toLowerCase()).length > 1;
+      const duplicated = leaves.filter((l) => l === leaf.trim().toLowerCase()).length > 1;
       let title = leaf;
       if (duplicated && p.depth > 0) {
         const parts = String(p.path).split('›');
@@ -293,29 +338,59 @@
         title,
         path: p.path || leaf,
         hexColor: '',
+        readOnly: false,
         tasks: byProject.get(Number(p.id)) || [],
       };
     });
   }
 
+  function columnList() {
+    return mode === 'triage' ? columnsForProjects() : columnsForViews();
+  }
+
   // --- Rendering ---
+
+  function emptyMessage() {
+    if (mode === 'triage') {
+      return t('kanbanNoProjects', 'No projects found — create one in Vikunja first.');
+    }
+    if (mode === 'gtd' && currentGtdId === null) {
+      return t('kanbanNoSavedViews', 'No saved filters found — create or favorite a filter in Vikunja.');
+    }
+    if (mode === 'projects' && currentProjectId === null) {
+      return t('kanbanNoProjects', 'No projects found — create one in Vikunja first.');
+    }
+    if (kanbanViews.length === 0) {
+      return t('kanbanNoKanbanView', 'This board has no kanban view configured in Vikunja.');
+    }
+    return t('kanbanNoBuckets', 'This kanban view has no columns yet.');
+  }
 
   function renderBoard() {
     boardEl.textContent = '';
-    const columns = groupMode === 'views' ? columnsForViews() : columnsForProjects();
+    const columns = columnList();
     if (columns.length === 0) {
       const empty = document.createElement('p');
       empty.className = 'empty';
-      empty.textContent =
-        groupMode === 'views'
-          ? t('kanbanNoBuckets', 'This kanban view has no columns yet.')
-          : t('kanbanNoProjects', 'No projects found — create one in Vikunja first.');
+      empty.textContent = emptyMessage();
       boardEl.appendChild(empty);
       return;
     }
     columns.forEach((col, index) => {
       boardEl.appendChild(renderColumn(col, index, columns.length));
     });
+  }
+
+  function findTaskById(id) {
+    if (id === null || id === undefined) return null;
+    if (mode === 'triage') {
+      return triageTasks.find((tk) => Number(tk.id) === Number(id)) || null;
+    }
+    for (const b of bucketColumns) {
+      const match = (b.tasks || []).find((tk) => Number(tk.id) === Number(id));
+      if (match) return match;
+    }
+    return null;
   }
 
   function renderColumn(col, index, total) {
@@ -351,36 +426,37 @@
       empty.textContent = t('kanbanEmpty', 'Nothing here');
       body.appendChild(empty);
     } else {
-      col.tasks.forEach((task) => body.appendChild(renderCard(task, index, total)));
+      col.tasks.forEach((task) => body.appendChild(renderCard(task, col, index, total)));
     }
     el.appendChild(body);
 
-    // Drop target
-    el.addEventListener('dragover', (e) => {
-      if (typeof e.preventDefault === 'function') e.preventDefault();
-      el.classList.add('drag-over');
-    });
-    el.addEventListener('dragleave', () => {
-      el.classList.remove('drag-over');
-    });
-    el.addEventListener('drop', (e) => {
-      if (typeof e.preventDefault === 'function') e.preventDefault();
-      el.classList.remove('drag-over');
-      const id = draggingTaskId;
-      draggingTaskId = null;
-      const task = id === null ? null : tasks.find((tk) => Number(tk.id) === Number(id));
-      if (!task) return;
-      dropTaskOnColumn(task, col);
-    });
+    if (!col.readOnly) {
+      el.addEventListener('dragover', (e) => {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        el.classList.add('drag-over');
+      });
+      el.addEventListener('dragleave', () => {
+        el.classList.remove('drag-over');
+      });
+      el.addEventListener('drop', (e) => {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
+        el.classList.remove('drag-over');
+        const id = draggingTaskId;
+        draggingTaskId = null;
+        const task = findTaskById(id);
+        if (!task) return;
+        dropTaskOnColumn(task, col);
+      });
+    }
     return el;
   }
 
-  function renderCard(task, colIndex, total) {
+  function renderCard(task, col, colIndex, total) {
     const card = document.createElement('article');
-    card.className = 'kcard' + (task.done ? ' done' : '');
+    card.className = 'kcard' + (task.done ? ' done' : '') + (col.readOnly ? ' readonly' : '');
     card.setAttribute('data-task-id', task.id);
     card.setAttribute('data-col-index', colIndex);
-    card.draggable = true;
+    card.draggable = !col.readOnly;
 
     card.appendChild(
       makeCheckbox(task, (input) => toggleDone(task, input)),
@@ -400,6 +476,13 @@
 
     const meta = document.createElement('div');
     meta.className = 'kcard-meta';
+    const ident = cardIdentifierText(task);
+    if (ident) {
+      const identEl = document.createElement('span');
+      identEl.className = 'kcard-ident';
+      identEl.textContent = ident;
+      meta.appendChild(identEl);
+    }
     const due = formatDue(task.due_date);
     if (due) {
       const dueEl = document.createElement('span');
@@ -433,28 +516,29 @@
     }
     card.appendChild(cardBody);
 
-    // ←/→ nudges (keyboard-precise alternative to dragging)
-    const moveWrap = document.createElement('div');
-    moveWrap.className = 'kcard-move';
-    if (colIndex > 0) {
-      moveWrap.appendChild(moveButton(task, -1));
-    }
-    if (colIndex < total - 1) {
-      moveWrap.appendChild(moveButton(task, 1));
-    }
-    card.appendChild(moveWrap);
+    if (!col.readOnly) {
+      const moveWrap = document.createElement('div');
+      moveWrap.className = 'kcard-move';
+      if (colIndex > 0) {
+        moveWrap.appendChild(moveButton(task, colIndex, -1));
+      }
+      if (colIndex < total - 1) {
+        moveWrap.appendChild(moveButton(task, colIndex, 1));
+      }
+      card.appendChild(moveWrap);
 
-    card.addEventListener('dragstart', () => {
-      draggingTaskId = task.id;
-      card.classList.add('dragging');
-    });
-    card.addEventListener('dragend', () => {
-      card.classList.remove('dragging');
-    });
+      card.addEventListener('dragstart', () => {
+        draggingTaskId = task.id;
+        card.classList.add('dragging');
+      });
+      card.addEventListener('dragend', () => {
+        card.classList.remove('dragging');
+      });
+    }
     return card;
   }
 
-  function moveButton(task, direction) {
+  function moveButton(task, colIndex, direction) {
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.textContent = direction < 0 ? '←' : '→';
@@ -463,62 +547,120 @@
         ? t('kanbanMovePrev', 'Move to the previous column')
         : t('kanbanMoveNext', 'Move to the next column');
     btn.setAttribute('aria-label', btn.title);
-    btn.addEventListener('click', () => nudgeTask(task, direction));
+    btn.addEventListener('click', () => nudgeTask(task, colIndex, direction));
     return btn;
   }
 
   // --- Actions ---
 
-  function columnList() {
-    return groupMode === 'views' ? columnsForViews() : columnsForProjects();
-  }
-
-  function findTaskColumnIndex(task) {
-    const columns = columnList();
-    if (groupMode === 'views') {
-      const key = task.bucket_id !== undefined ? Number(task.bucket_id) : null;
-      const idx = columns.findIndex((c) => Number(c.id) === key && c.kind === 'bucket');
-      return idx === -1 ? 0 : idx;
+  function moveTaskBetweenLocalBuckets(task, targetBucketId) {
+    let sourceBucket = null;
+    let sourceIndex = -1;
+    for (const b of bucketColumns) {
+      const idx = (b.tasks || []).findIndex((tk) => Number(tk.id) === Number(task.id));
+      if (idx !== -1) {
+        sourceBucket = b;
+        sourceIndex = idx;
+        break;
+      }
     }
-    const idx = columns.findIndex((c) => Number(c.id) === Number(task.project_id));
-    return idx === -1 ? 0 : idx;
+    const targetBucket = bucketColumns.find((b) => Number(b.id) === Number(targetBucketId));
+    if (!targetBucket) return null;
+    if (sourceBucket && Number(sourceBucket.id) === Number(targetBucket.id)) return null;
+
+    if (sourceBucket && sourceIndex !== -1) {
+      sourceBucket.tasks.splice(sourceIndex, 1);
+    }
+    if (!Array.isArray(targetBucket.tasks)) {
+      targetBucket.tasks = [];
+    }
+    targetBucket.tasks.push(task);
+
+    return {
+      sourceBucket,
+      sourceIndex,
+      targetBucket,
+    };
   }
 
-  function applyPatch(task, patch) {
-    if (patch.bucket_id !== undefined) task.bucket_id = patch.bucket_id;
-    if (patch.project_id !== undefined) task.project_id = patch.project_id;
-    if (patch.done !== undefined) task.done = patch.done;
+  function rollbackLocalBucketMove(task, moveInfo, prevBucketId, prevDone) {
+    if (!moveInfo) return;
+    const { sourceBucket, sourceIndex, targetBucket } = moveInfo;
+    const targetIdx = (targetBucket.tasks || []).findIndex((tk) => Number(tk.id) === Number(task.id));
+    if (targetIdx !== -1) {
+      targetBucket.tasks.splice(targetIdx, 1);
+    }
+    if (sourceBucket) {
+      if (!Array.isArray(sourceBucket.tasks)) sourceBucket.tasks = [];
+      const insertAt = Math.min(Math.max(0, sourceIndex), sourceBucket.tasks.length);
+      sourceBucket.tasks.splice(insertAt, 0, task);
+    }
+    task.bucket_id = prevBucketId;
+    task.done = prevDone;
   }
 
-  async function moveTask(task, patch) {
-    const before = {};
-    if (patch.bucket_id !== undefined) before.bucket_id = task.bucket_id;
-    if (patch.project_id !== undefined) before.project_id = task.project_id;
-    applyPatch(task, patch);
+  async function moveCardToBucket(task, targetBucketId) {
+    const targetId = mode === 'gtd' ? currentGtdId : currentProjectId;
+    if (targetId === null || currentViewId === null) return;
+    if (Number(task.bucket_id) === Number(targetBucketId)) return;
+
+    const prevBucketId = task.bucket_id;
+    const prevDone = Boolean(task.done);
+    const moveInfo = moveTaskBetweenLocalBuckets(task, targetBucketId);
+    if (!moveInfo) return;
+
+    task.bucket_id = targetBucketId;
+    const doneBucketId = currentView && Number(currentView.done_bucket_id);
+    if (doneBucketId) {
+      if (Number(targetBucketId) === doneBucketId) {
+        task.done = true;
+      } else if (moveInfo.sourceBucket && Number(moveInfo.sourceBucket.id) === doneBucketId) {
+        task.done = false;
+      }
+    }
+    renderBoard();
+
+    try {
+      const res = await moveTaskToBucket(targetId, currentViewId, targetBucketId, task.id);
+      if (res && res.task && typeof res.task.done === 'boolean') {
+        task.done = res.task.done;
+        renderBoard();
+      }
+    } catch (err) {
+      rollbackLocalBucketMove(task, moveInfo, prevBucketId, prevDone);
+      renderBoard();
+      uiShowToast(toastEl, t('kanbanMoveFailed', 'Could not move the task: $1', [err.message]), { error: true });
+    }
+  }
+
+  async function moveCardToProject(task, targetProjectId) {
+    const nextProjectId = Number(targetProjectId);
+    if (Number(task.project_id) === nextProjectId) return;
+    const prevProjectId = task.project_id;
+    task.project_id = nextProjectId;
     renderBoard();
     try {
-      await updateTask(task.id, patch);
+      await updateTask(task.id, { project_id: nextProjectId });
     } catch (err) {
-      applyPatch(task, before);
+      task.project_id = prevProjectId;
       renderBoard();
       uiShowToast(toastEl, t('kanbanMoveFailed', 'Could not move the task: $1', [err.message]), { error: true });
     }
   }
 
   function dropTaskOnColumn(task, col) {
+    if (!col || col.readOnly) return;
     if (col.kind === 'bucket') {
-      if (col.id === null) return; // the trailing "no column" is not a target
-      if (Number(task.bucket_id) === Number(col.id)) return;
-      moveTask(task, { bucket_id: Number(col.id) });
-    } else if (Number(task.project_id) !== Number(col.id)) {
-      moveTask(task, { project_id: Number(col.id) });
+      if (col.id === null || col.id === undefined) return;
+      moveCardToBucket(task, col.id);
+    } else {
+      moveCardToProject(task, col.id);
     }
   }
 
-  function nudgeTask(task, direction) {
+  function nudgeTask(task, colIndex, direction) {
     const columns = columnList();
-    const idx = findTaskColumnIndex(task);
-    const target = columns[idx + direction];
+    const target = columns[colIndex + direction];
     if (!target) return;
     dropTaskOnColumn(task, target);
   }
@@ -528,7 +670,20 @@
     const next = input.checked;
     try {
       await completeTask(task.id, next);
-      applyPatch(task, { done: next });
+      task.done = next;
+      if (mode !== 'triage' && !isFilterModeView() && currentView) {
+        const doneBucketId = Number(currentView.done_bucket_id) || 0;
+        const defaultBucketId = Number(currentView.default_bucket_id) || 0;
+        if (doneBucketId && next === true) {
+          if (moveTaskBetweenLocalBuckets(task, doneBucketId)) {
+            task.bucket_id = doneBucketId;
+          }
+        } else if (doneBucketId && next === false && Number(task.bucket_id) === doneBucketId && defaultBucketId) {
+          if (moveTaskBetweenLocalBuckets(task, defaultBucketId)) {
+            task.bucket_id = defaultBucketId;
+          }
+        }
+      }
       renderBoard();
     } catch (err) {
       input.checked = !next;
@@ -540,46 +695,89 @@
 
   // --- Data loading ---
 
+  async function fetchViewBuckets(targetId, viewId) {
+    if (typeof listKanbanBuckets === 'function') {
+      return listKanbanBuckets(targetId, viewId);
+    }
+    const [bkts, tks] = await Promise.all([
+      listBuckets(targetId, viewId),
+      listTasks({ projectId: targetId, viewId }),
+    ]);
+    return bkts.map((b) => ({
+      ...b,
+      tasks: tks.filter((tk) => Number(tk.bucket_id) === Number(b.id)),
+    }));
+  }
+
   async function loadBoard() {
-    if (busy) return;
-    busy = true;
+    const seq = ++loadSeq;
     setError('');
+    fillTargetSelect();
     try {
-      buckets = [];
-      kanbanViews = [];
-      if (groupMode === 'views') {
-        const views = await listProjectViews(currentProjectId).catch(() => []);
-        kanbanViews = views.filter(isKanbanView);
-        if (kanbanViews.length === 0) {
-          // The project has no kanban view: fall back to project columns and
-          // say so (the user can still switch modes manually).
-          setGroupMode('projects', { silent: true });
-          setNotice(t('kanbanNoViewFallback', 'This project has no kanban view — showing projects as columns instead.'));
+      if (mode === 'triage') {
+        viewControl.hidden = true;
+        setNotice('');
+        const fetched = await listTasks({});
+        if (seq !== loadSeq) return;
+        triageTasks = Array.isArray(fetched) ? fetched : [];
+        bucketColumns = [];
+        renderBoard();
+        return;
+      }
+
+      const targetId = mode === 'gtd' ? currentGtdId : currentProjectId;
+      if (targetId === null) {
+        bucketColumns = [];
+        kanbanViews = [];
+        currentViewId = null;
+        currentView = null;
+        viewControl.hidden = true;
+        setNotice('');
+        renderBoard();
+        return;
+      }
+
+      const views = await listProjectViews(targetId).catch(() => []);
+      if (seq !== loadSeq) return;
+      kanbanViews = (Array.isArray(views) ? views : []).filter(isKanbanView);
+      if (kanbanViews.length === 0) {
+        bucketColumns = [];
+        currentViewId = null;
+        currentView = null;
+        viewControl.hidden = true;
+        setNotice(t('kanbanNoKanbanView', 'This board has no kanban view configured in Vikunja.'));
+        renderBoard();
+        return;
+      }
+
+      currentView =
+        kanbanViews.find((v) => Number(v.id) === Number(currentViewId)) ||
+        kanbanViews[0];
+      currentViewId = Number(currentView.id);
+      fillViewSelect();
+
+      const loadedBuckets = await fetchViewBuckets(targetId, currentViewId);
+      if (seq !== loadSeq) return;
+      bucketColumns = Array.isArray(loadedBuckets) ? loadedBuckets : [];
+
+      if (isFilterModeView()) {
+        setNotice(t('kanbanFilterBucketsNotice', 'Filter-based kanban view — columns are automatic and read-only.'));
+      } else if (mode === 'projects') {
+        const selected = nestedProjects().find((p) => Number(p.id) === Number(targetId));
+        const totalTasks = bucketColumns.reduce((sum, b) => sum + ((b.tasks && b.tasks.length) || 0), 0);
+        if (selected && selected.hasChildren && totalTasks === 0) {
+          setNotice(t('kanbanContainerEmptyNotice', 'This parent project has no direct tasks — check its subprojects or the GTD views tab.'));
         } else {
           setNotice('');
-          if (currentViewId === null || !kanbanViews.some((v) => Number(v.id) === Number(currentViewId))) {
-            currentViewId = Number(kanbanViews[0].id);
-          }
-          buckets = await listBuckets(currentProjectId, currentViewId);
-          fillViewSelect();
         }
       } else {
         setNotice('');
       }
-
-      if (groupMode === 'views') {
-        // A kanban view scopes the fetch and fills bucket_id per task. No
-        // filter: the board shows every task (pending toggle is local).
-        tasks = await listTasks({ projectId: currentProjectId, viewId: currentViewId });
-      } else {
-        tasks = await listTasks({});
-      }
       renderBoard();
     } catch (err) {
+      if (seq !== loadSeq) return;
       setError(t('kanbanLoadFailed', 'Could not load the board: $1', [err.message]));
       boardEl.textContent = '';
-    } finally {
-      busy = false;
     }
   }
 
@@ -593,16 +791,27 @@
       }
       if (prefs && prefs.theme) applyTheme(prefs.theme);
       projects = await listProjects();
-      currentProjectId = initialProjectId(prefs);
-      fillProjectSelect(currentProjectId);
-      // Restore the last grouping choice; views mode auto-falls back per
-      // project, so a stale "views" choice is harmless.
+
+      let saved = null;
       try {
-        const stored = await api.storage.local.get({ kanbanGroupMode: null });
-        setGroupMode(stored && stored.kanbanGroupMode ? stored.kanbanGroupMode : 'views', { silent: true });
+        const stored = await api.storage.local.get({ [STATE_KEY]: null });
+        saved = stored && stored[STATE_KEY] ? stored[STATE_KEY] : null;
       } catch (e) {
-        setGroupMode('views', { silent: true });
+        saved = null;
       }
+
+      const filters = savedFilters();
+      const reals = realProjects();
+      currentGtdId =
+        saved && saved.gtdId !== null && saved.gtdId !== undefined && filters.some((f) => Number(f.id) === Number(saved.gtdId))
+          ? Number(saved.gtdId)
+          : initialGtdId();
+      currentProjectId =
+        saved && saved.projectId !== null && saved.projectId !== undefined && reals.some((p) => Number(p.id) === Number(saved.projectId))
+          ? Number(saved.projectId)
+          : initialProjectId(prefs);
+
+      setMode(saved && saved.mode ? saved.mode : 'projects', { silent: true });
       await loadBoard();
     } catch (err) {
       setError(t('kanbanLoadFailed', 'Could not load the board: $1', [err.message]));
@@ -613,8 +822,15 @@
 
   projectSelect.addEventListener('change', (e) => {
     const value = e.target && e.target.value !== undefined ? e.target.value : projectSelect.value;
-    currentProjectId = Number(value) || null;
+    const id = Number(value) || null;
+    if (mode === 'gtd') {
+      currentGtdId = id;
+    } else if (mode === 'projects') {
+      currentProjectId = id;
+    }
     currentViewId = null;
+    currentView = null;
+    persistState();
     loadBoard();
   });
 
@@ -624,16 +840,25 @@
     loadBoard();
   });
 
-  groupViewsBtn.addEventListener('click', () => {
-    if (groupMode === 'views') return;
-    setGroupMode('views');
+  modeGtdBtn.addEventListener('click', () => {
+    if (mode === 'gtd') return;
+    setMode('gtd');
     currentViewId = null;
+    currentView = null;
     loadBoard();
   });
 
-  groupProjectsBtn.addEventListener('click', () => {
-    if (groupMode === 'projects') return;
-    setGroupMode('projects');
+  modeProjectsBtn.addEventListener('click', () => {
+    if (mode === 'projects') return;
+    setMode('projects');
+    currentViewId = null;
+    currentView = null;
+    loadBoard();
+  });
+
+  modeTriageBtn.addEventListener('click', () => {
+    if (mode === 'triage') return;
+    setMode('triage');
     loadBoard();
   });
 
