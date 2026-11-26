@@ -586,5 +586,8 @@
   },
   "presetInboxTitle": {
     "message": "Показать задачи из проекта Inbox"
+  },
+  "descPreviewLabel": {
+    "message": "Предпросмотр"
   }
 }

@@ -332,6 +332,17 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   const firstTask = ids['task-list'].childNodes[0];
   assert(firstTask.className.includes('task'), 'first row is task');
   assert(ids['preset-inbox'].hidden === true, 'inbox chip hidden without an Inbox project');
+
+  // htmlToText: HTML bodies flatten to readable text (regex fallback path in
+  // the harness; the popup itself uses DOMParser).
+  assert(globalThis.UiLib.htmlToText('<p>Hola <b>mundo</b></p>') === 'Hola mundo', 'htmlToText strips markup, got ' + JSON.stringify(globalThis.UiLib.htmlToText('<p>Hola <b>mundo</b></p>')));
+  assert(globalThis.UiLib.htmlToText('texto plano') === 'texto plano', 'htmlToText passes plain text through');
+  assert(globalThis.UiLib.htmlToText('<script>robo()</script>y <a href="https://x.e">enlace</a>') === 'y enlace', 'htmlToText drops script content, got ' + JSON.stringify(globalThis.UiLib.htmlToText('<script>robo()</script>y <a href="https://x.e">enlace</a>')));
+
+  // The list preview shows the flattened body on the second line.
+  const metaRow = firstTask.childNodes[1].childNodes[1];
+  const descPreview = metaRow ? metaRow.childNodes[metaRow.childNodes.length - 1] : null;
+  assert(descPreview && descPreview.className.includes('task-desc') && descPreview.textContent === 'deploy', 'task body preview on the row, got ' + JSON.stringify(descPreview && descPreview.textContent));
   const checkboxInput = firstTask.childNodes[0].childNodes[0];
   assert(checkboxInput.checked === false, 'first checkbox unchecked');
   const doneRow = ids['task-list'].childNodes[1];
@@ -573,8 +584,8 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   assert(!('filter' in viewFetch), 'no custom filter ANDed with the saved filter, got ' + JSON.stringify(viewFetch));
   assert(switchChips()[1].classList.contains('active'), 'selected filter chip active');
   assert(!switchChips()[0].classList.contains('active'), 'All tasks no longer active');
-  const projSpan = ids['task-list'].childNodes[0].childNodes[1].childNodes[0].childNodes[1];
-  assert(projSpan && projSpan.className.includes('task-project'), 'project name shown in filter view, got ' + JSON.stringify(projSpan && projSpan.className));
+  const projSpan = ids['task-list'].childNodes[0].childNodes[1].childNodes[1].childNodes[0];
+  assert(projSpan && projSpan.className.includes('task-project'), 'project name shown on the second row line in filter view, got ' + JSON.stringify(projSpan && projSpan.className));
 
   eval(src);
   await new Promise((r) => { setTimeout(r, 20); });

@@ -23,8 +23,12 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 
 ## Core Features
 
-- **Toolbar popup** — a searchable task list with complete/reopen checkboxes,
-  due dates, labels and project tags. The Vikunja logo opens your instance, and
+- **Toolbar popup** — a searchable task list (480px wide) with complete/reopen checkboxes,
+  two-line entries (title on the first line; project, due date, priority,
+  labels and a preview of the body on the second) and rendered HTML
+  descriptions: list rows show the flattened body text, and the inline
+  editor renders a sanitized preview of the HTML above the raw source. The
+  Vikunja logo opens your instance, and
   the settings gear opens the options page.
 - **Quick Add Magic** — type a task like `+Home Water plants !3 *focus @alice
   tomorrow` in the popup and it is parsed exactly like the Vikunja web app:

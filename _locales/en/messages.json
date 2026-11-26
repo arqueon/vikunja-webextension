@@ -586,5 +586,8 @@
   },
   "presetInboxTitle": {
     "message": "Show tasks from your Inbox project"
+  },
+  "descPreviewLabel": {
+    "message": "Preview"
   }
 }

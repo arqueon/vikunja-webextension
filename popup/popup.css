@@ -3,8 +3,8 @@
    panel background for a seamless, native appearance. */
 
 body {
-  width: 400px;
-  height: 560px;
+  width: 480px;
+  height: 600px;
   display: flex;
   flex-direction: column;
   background: var(--surface);
@@ -380,7 +380,7 @@ body {
   color: var(--blue);
 }
 
-/* --- Task list: flat, menu-like rows --- */
+/* --- Task list: flat, menu-like rows, two lines per entry --- */
 
 #list {
   display: flex;
@@ -549,11 +549,10 @@ body {
   flex: none;
   color: var(--muted);
   font-size: 0.75rem;
-  max-width: 140px;
+  max-width: 200px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  padding-right: 0.5rem;
 }
 
 .task-meta {
@@ -563,6 +562,16 @@ body {
   gap: 0.3rem;
   margin-top: 0.15rem;
   font-size: 0.72rem;
+}
+
+/* Body preview on the row's second line: muted, clipped, searchable feel */
+.task-desc {
+  flex: 1 1 8rem;
+  min-width: 6rem;
+  color: var(--muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .task-due {
@@ -706,6 +715,90 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
+}
+
+/* Rendered HTML description: readable body, safe links, scrollable */
+.task-desc-render-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.task-desc-render-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.task-desc-render {
+  max-height: 130px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  padding: 0.4rem 0.5rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  background: var(--surface-alt);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  user-select: text;
+}
+
+.task-desc-render p {
+  margin: 0 0 0.35em;
+}
+
+.task-desc-render p:last-child,
+.task-desc-render ul:last-child,
+.task-desc-render ol:last-child {
+  margin-bottom: 0;
+}
+
+.task-desc-render ul,
+.task-desc-render ol {
+  margin: 0 0 0.35em;
+  padding-left: 1.1em;
+}
+
+.task-desc-render h1,
+.task-desc-render h2,
+.task-desc-render h3,
+.task-desc-render h4,
+.task-desc-render h5,
+.task-desc-render h6 {
+  font-size: 0.85rem;
+  margin: 0.2em 0;
+}
+
+.task-desc-render a {
+  color: var(--blue);
+  text-decoration: underline;
+}
+
+.task-desc-render blockquote {
+  margin: 0 0 0.35em;
+  padding-left: 0.6rem;
+  border-left: 2px solid var(--border);
+  color: var(--muted);
+}
+
+.task-desc-render pre,
+.task-desc-render code {
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: var(--radius);
+}
+
+.task-desc-render pre {
+  padding: 0.35rem 0.45rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
+.task-desc-render hr {
+  border: none;
+  border-top: 1px solid var(--border-subtle);
+  margin: 0.4em 0;
 }
 
 .task-editor .editor-row {

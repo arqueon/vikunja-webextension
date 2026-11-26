@@ -15,6 +15,7 @@ const browserGlobals = {
   window: 'readonly',
   document: 'readonly',
   navigator: 'readonly',
+  DOMParser: 'readonly',
   location: 'readonly',
   history: 'readonly',
   screen: 'readonly',

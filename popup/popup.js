@@ -60,6 +60,7 @@
     priorityLabel: uiPriorityLabel,
     duePresetDate: uiDuePresetDate,
     formatDateTimeLocal: uiFormatDateTimeLocal,
+    htmlToText: uiHtmlToText,
   } = window.UiLib;
   const { t } = window.I18n;
 
@@ -579,6 +580,71 @@
 
   // Vikunja-style checkbox: a visually hidden input + a drawn rounded-square
   // SVG (mirrors the frontend's FancyCheckbox/checkbox.svg).
+  function truncateText(text, max) {
+    const value = String(text || '');
+    if (value.length <= max) return value;
+    return value.slice(0, max - 1).trimEnd() + '…';
+  }
+
+  // Builds a sanitized, renderable version of an HTML description. Vikunja
+  // stores descriptions as HTML; the popup only ever accepts a whitelist of
+  // formatting elements and strips every attribute except vetted http(s)
+  // links. DOMParser keeps this lint-clean: the markup is never assigned to
+  // live innerHTML and scripts never execute.
+  function renderSafeDescription(html) {
+    if (typeof DOMParser !== 'function' || typeof document.createDocumentFragment !== 'function') {
+      return null;
+    }
+    const ALLOWED = new Set([
+      'A', 'B', 'I', 'U', 'S', 'EM', 'STRONG', 'DEL', 'P', 'BR', 'UL', 'OL',
+      'LI', 'CODE', 'PRE', 'BLOCKQUOTE', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6',
+      'HR', 'SPAN', 'DIV',
+    ]);
+    // Dropped whole (children included): executable/embedded content whose
+    // text should never leak into the preview.
+    const DROPPED = new Set([
+      'SCRIPT', 'STYLE', 'IFRAME', 'OBJECT', 'EMBED', 'IMG', 'VIDEO',
+      'AUDIO', 'SOURCE', 'TRACK', 'FORM', 'INPUT', 'BUTTON', 'SELECT',
+      'TEXTAREA', 'LINK', 'META', 'TITLE',
+    ]);
+    let doc;
+    try {
+      doc = new DOMParser().parseFromString(String(html || ''), 'text/html');
+    } catch (e) {
+      return null;
+    }
+    const frag = document.createDocumentFragment();
+    const clean = (node, parent) => {
+      for (const child of Array.from(node.childNodes || [])) {
+        if (child.nodeType === 3) {
+          parent.appendChild(document.createTextNode(child.textContent || ''));
+          continue;
+        }
+        if (child.nodeType !== 1) continue;
+        if (DROPPED.has(child.tagName)) continue;
+        if (!ALLOWED.has(child.tagName)) {
+          clean(child, parent);
+          continue;
+        }
+        const clone = document.createElement(child.tagName);
+        if (child.tagName === 'A') {
+          const href = child.getAttribute('href') || '';
+          if (/^https?:/i.test(href)) {
+            clone.setAttribute('href', href);
+            clone.setAttribute('target', '_blank');
+            clone.setAttribute('rel', 'noopener noreferrer');
+          }
+        }
+        if (child.tagName !== 'BR') {
+          clean(child, clone);
+        }
+        parent.appendChild(clone);
+      }
+    };
+    clean(doc.body, frag);
+    return frag;
+  }
+
   function makeCheckbox(task, onChange) {
     const label = document.createElement('label');
     label.className = 'task-check';
@@ -673,18 +739,21 @@
         closePopup();
       });
       top.appendChild(title);
+      body.appendChild(top);
+
+      // Second line: project, due date, priority, labels and a preview of
+      // the body (Vikunja serves descriptions as HTML, so it is flattened
+      // to readable text here and rendered as safe HTML in the editor).
+      const meta = document.createElement('div');
+      meta.className = 'task-meta';
 
       if (showProject && projectsById.has(task.project_id)) {
         const project = document.createElement('span');
         project.className = 'task-project';
         project.textContent = projectsById.get(task.project_id).title;
         project.title = project.textContent;
-        top.appendChild(project);
+        meta.appendChild(project);
       }
-      body.appendChild(top);
-
-      const meta = document.createElement('div');
-      meta.className = 'task-meta';
 
       const due = formatDue(task.due_date);
       if (due) {
@@ -721,6 +790,15 @@
         }
         meta.appendChild(tag);
       });
+
+      const descText = uiHtmlToText(task.description);
+      if (descText) {
+        const descEl = document.createElement('span');
+        descEl.className = 'task-desc';
+        descEl.textContent = truncateText(descText, 120);
+        descEl.title = descText;
+        meta.appendChild(descEl);
+      }
 
       if (meta.childNodes.length) {
         body.appendChild(meta);
@@ -789,6 +867,26 @@
         }
         dueRow.appendChild(dueInput);
         editor.appendChild(dueRow);
+
+        // Rendered preview of an HTML description, above the raw editor.
+        const rawDescription = String(task.description || '');
+        if (/<[a-z][\s\S]*>/i.test(rawDescription)) {
+          const safeNodes = renderSafeDescription(rawDescription);
+          if (safeNodes && typeof safeNodes.childNodes === 'object') {
+            const previewWrap = document.createElement('div');
+            previewWrap.className = 'task-desc-render-wrap';
+            const previewLabel = document.createElement('div');
+            previewLabel.className = 'task-desc-render-label';
+            previewLabel.textContent = t('descPreviewLabel', 'Preview');
+            const preview = document.createElement('div');
+            preview.className = 'task-desc-render';
+            const nodes = Array.from(safeNodes.childNodes || []);
+            nodes.forEach((node) => preview.appendChild(node));
+            previewWrap.appendChild(previewLabel);
+            previewWrap.appendChild(preview);
+            editor.appendChild(previewWrap);
+          }
+        }
 
         // Description textarea
         const descInput = document.createElement('textarea');
