@@ -603,10 +603,10 @@
     "message": "Tablero"
   },
   "kanbanModeGtd": {
-    "message": "Vistas GTD"
+    "message": "Vistas"
   },
   "kanbanModeGtdTitle": {
-    "message": "Filtros guardados GTD con sus columnas kanban configuradas"
+    "message": "Filtros guardados con sus columnas kanban configuradas"
   },
   "kanbanModeProjects": {
     "message": "Proyectos"
@@ -630,7 +630,7 @@
     "message": "Vista kanban basada en filtros — las columnas son automáticas y de solo lectura."
   },
   "kanbanContainerEmptyNotice": {
-    "message": "Este proyecto padre no tiene tareas directas — revisa sus subproyectos o la pestaña Vistas GTD."
+    "message": "Este proyecto padre no tiene tareas directas — revisa sus subproyectos o la pestaña Vistas."
   },
   "kanbanGroupViews": {
     "message": "Vistas"

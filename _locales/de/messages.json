@@ -603,10 +603,10 @@
     "message": "Board"
   },
   "kanbanModeGtd": {
-    "message": "GTD-Ansichten"
+    "message": "Ansichten"
   },
   "kanbanModeGtdTitle": {
-    "message": "Gespeicherte GTD- und Filterboards mit ihren Kanban-Spalten"
+    "message": "Gespeicherte Filterboards mit ihren Kanban-Spalten"
   },
   "kanbanModeProjects": {
     "message": "Projekte"
@@ -630,7 +630,7 @@
     "message": "Filterbasierte Kanban-Ansicht — Spalten sind automatisch und schreibgeschützt."
   },
   "kanbanContainerEmptyNotice": {
-    "message": "Dieses übergeordnete Projekt hat keine direkten Aufgaben — prüfe seine Unterprojekte oder den Tab GTD-Ansichten."
+    "message": "Dieses übergeordnete Projekt hat keine direkten Aufgaben — prüfe seine Unterprojekte oder den Tab Ansichten."
   },
   "kanbanGroupViews": {
     "message": "Ansichten"

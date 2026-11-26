@@ -100,12 +100,7 @@
   function savedFilters() {
     const all = projects.filter((p) => p && Number(p.id) < -1);
     const favs = all.filter((p) => p.is_favorite);
-    const list = favs.length ? favs : all;
-    return list.slice().sort((a, b) => {
-      const ag = String(a.title || '').startsWith('GTD') ? 0 : 1;
-      const bg = String(b.title || '').startsWith('GTD') ? 0 : 1;
-      return ag - bg;
-    });
+    return favs.length ? favs : all;
   }
 
   function inboxProjectId() {
@@ -766,7 +761,7 @@
         const selected = nestedProjects().find((p) => Number(p.id) === Number(targetId));
         const totalTasks = bucketColumns.reduce((sum, b) => sum + ((b.tasks && b.tasks.length) || 0), 0);
         if (selected && selected.hasChildren && totalTasks === 0) {
-          setNotice(t('kanbanContainerEmptyNotice', 'This parent project has no direct tasks — check its subprojects or the GTD views tab.'));
+          setNotice(t('kanbanContainerEmptyNotice', 'This parent project has no direct tasks — check its subprojects or the Views tab.'));
         } else {
           setNotice('');
         }

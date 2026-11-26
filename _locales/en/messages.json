@@ -603,10 +603,10 @@
     "message": "Board"
   },
   "kanbanModeGtd": {
-    "message": "GTD Views"
+    "message": "Views"
   },
   "kanbanModeGtdTitle": {
-    "message": "Saved GTD and filter boards with their kanban columns"
+    "message": "Saved filter boards with their kanban columns"
   },
   "kanbanModeProjects": {
     "message": "Projects"
@@ -630,7 +630,7 @@
     "message": "Filter-based kanban view — columns are automatic and read-only."
   },
   "kanbanContainerEmptyNotice": {
-    "message": "This parent project has no direct tasks — check its subprojects or the GTD views tab."
+    "message": "This parent project has no direct tasks — check its subprojects or the Views tab."
   },
   "kanbanGroupViews": {
     "message": "Views"
