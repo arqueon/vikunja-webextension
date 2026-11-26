@@ -652,5 +652,11 @@
   },
   "kanbanNoBuckets": {
     "message": "У этого канбан-вида пока нет колонок."
+  },
+  "editHtmlButton": {
+    "message": "Изменить HTML-код"
+  },
+  "previewHtmlButton": {
+    "message": "К предпросмотру"
   }
 }

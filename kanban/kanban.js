@@ -25,6 +25,7 @@
   } = window.VikunjaLib;
   const { t } = window.I18n;
   const uiShowToast = window.UiLib ? window.UiLib.showToast : () => {};
+  const uiProjectOptions = window.UiLib ? window.UiLib.projectOptions : null;
 
   const projectSelect = document.getElementById('project-select');
   const viewSelect = document.getElementById('view-select');
@@ -87,13 +88,34 @@
     return first ? first.id : null;
   }
 
+  // Vikunja's view model calls the kind `view_kind` (list/gantt/table/
+  // kanban); older payloads and mocks may carry `type`, so match both.
+  function isKanbanView(v) {
+    const kind = String((v && (v.view_kind || v.view_mode || v.type)) || '').toLowerCase();
+    return kind === 'kanban';
+  }
+
   function fillProjectSelect(selectedId) {
     projectSelect.textContent = '';
-    for (const p of realProjects()) {
-      const opt = document.createElement('option');
-      opt.value = String(p.id);
-      opt.textContent = p.title || 'Untitled';
-      projectSelect.appendChild(opt);
+    const opts = uiProjectOptions ? uiProjectOptions(projects) : null;
+    if (opts) {
+      // Hierarchy-aware: children indent under their parents like the
+      // popup's project selects, and the full path disambiguates equal
+      // leaf titles (ANYTYPE › Our Space › Autos).
+      for (const p of opts) {
+        const option = document.createElement('option');
+        option.value = String(p.id);
+        const indent = p.depth > 0 ? '\u00A0\u00A0'.repeat(p.depth) + '└ ' : '';
+        option.textContent = indent + p.title + (p.depth > 0 ? ` (${p.path})` : '');
+        projectSelect.appendChild(option);
+      }
+    } else {
+      for (const p of realProjects()) {
+        const option = document.createElement('option');
+        option.value = String(p.id);
+        option.textContent = p.title || 'Untitled';
+        projectSelect.appendChild(option);
+      }
     }
     projectSelect.value = String(selectedId);
   }
@@ -210,8 +232,10 @@
     return columns;
   }
 
-  // Projects mode: one column per project (Inbox first), move = reassign
-  // the task's project.
+  // Projects mode: one column per project (Inbox first, then grouped by
+  // their hierarchical path), move = reassign the task's project. The
+  // column title carries the full path so equal leaf names (Autos under
+  // different parents) stay distinguishable.
   function columnsForProjects() {
     const byProject = new Map();
     for (const task of visibleTasks()) {
@@ -219,16 +243,26 @@
       if (!byProject.has(key)) byProject.set(key, []);
       byProject.get(key).push(task);
     }
-    const ordered = realProjects().slice().sort((a, b) => {
-      const ai = (a.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
-      const bi = (b.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
-      return ai - bi;
-    });
+    let ordered;
+    if (uiProjectOptions) {
+      ordered = uiProjectOptions(projects).slice().sort((a, b) => {
+        const ai = a.title.trim().toLowerCase() === 'inbox' ? 0 : 1;
+        const bi = b.title.trim().toLowerCase() === 'inbox' ? 0 : 1;
+        if (ai !== bi) return ai - bi;
+        return String(a.path).localeCompare(String(b.path));
+      });
+    } else {
+      ordered = realProjects().slice().sort((a, b) => {
+        const ai = (a.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
+        const bi = (b.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
+        return ai - bi;
+      });
+    }
     return ordered.map((p) => ({
       key: `p-${p.id}`,
       id: p.id,
       kind: 'project',
-      title: p.title || 'Untitled',
+      title: ordered.length && p.path && p.depth > 0 ? p.path : (p.title || 'Untitled'),
       hexColor: '',
       tasks: byProject.get(Number(p.id)) || [],
     }));
@@ -485,9 +519,7 @@
       kanbanViews = [];
       if (groupMode === 'views') {
         const views = await listProjectViews(currentProjectId).catch(() => []);
-        kanbanViews = views.filter(
-          (v) => v && String(v.type || '').toLowerCase() === 'kanban',
-        );
+        kanbanViews = views.filter(isKanbanView);
         if (kanbanViews.length === 0) {
           // The project has no kanban view: fall back to project columns and
           // say so (the user can still switch modes manually).

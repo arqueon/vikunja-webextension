@@ -801,6 +801,35 @@ body {
   margin: 0.4em 0;
 }
 
+/* Raw HTML editor, tucked away behind the preview toggle */
+.task-desc-edit-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.btn-ghost-sm {
+  align-self: flex-start;
+  padding: 0.22rem 0.55rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.btn-ghost-sm:hover {
+  background: var(--surface-hover);
+  color: var(--ink);
+}
+
+.task-desc-edit-wrap textarea {
+  font-size: 0.75rem;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+
 .task-editor .editor-row {
   display: flex;
   gap: 0.4rem;

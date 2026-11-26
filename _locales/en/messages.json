@@ -652,5 +652,11 @@
   },
   "kanbanNoBuckets": {
     "message": "This kanban view has no columns yet."
+  },
+  "editHtmlButton": {
+    "message": "Edit HTML code"
+  },
+  "previewHtmlButton": {
+    "message": "Back to preview"
   }
 }

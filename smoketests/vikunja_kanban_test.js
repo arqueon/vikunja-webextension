@@ -97,8 +97,9 @@ const projects = [
   { id: 1, title: 'Inbox' },
   { id: 2, title: 'Casa', is_archived: false },
   { id: 3, title: 'Trabajo' },
+  { id: 4, title: 'Autos', parent_project_id: 2 },
 ];
-const kanbanView = { id: 10, title: 'Tablero', type: 'kanban' };
+const kanbanView = { id: 10, title: 'Tablero', view_kind: 'kanban' };
 const buckets = [
   { id: 101, title: 'To-Do', hex_color: '3a86ff' },
   { id: 102, title: 'Doing', hex_color: 'fd8a09' },
@@ -278,14 +279,15 @@ const cardsOf = (i) => {
   await wait();
   const projectsFetch = calls.listTasks[calls.listTasks.length - 1];
   assert(!projectsFetch.projectId && !projectsFetch.viewId, 'projects mode fetches the global list, got ' + JSON.stringify(projectsFetch));
-  assert(ids['board'].childNodes.length === 3, 'one column per project');
+  assert(ids['board'].childNodes.length === 4, 'one column per project, got ' + ids['board'].childNodes.length);
   assert(colTitle(0) === 'Inbox', 'Inbox column first, got ' + colTitle(0));
+  assert(colTitle(1) === 'Casa' && colTitle(2) === 'Casa › Autos', 'hierarchical path shown for nested projects, got ' + colTitle(1) + ' / ' + colTitle(2));
   assert(storage.get('kanbanGroupMode') === 'projects', 'grouping choice persisted');
 
   // Drop a card from Inbox onto Trabajo -> project move
   const inboxCard = cardsOf(0)[0];
   inboxCard.listeners['dragstart'][0]();
-  const trabajoCol = ids['board'].childNodes[2];
+  const trabajoCol = ids['board'].childNodes[3];
   await trabajoCol.listeners['drop'][0]({ preventDefault() {} });
   await flush();
   const projectMove = calls.updateTask[calls.updateTask.length - 1];

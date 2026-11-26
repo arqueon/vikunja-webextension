@@ -652,5 +652,11 @@
   },
   "kanbanNoBuckets": {
     "message": "Diese Kanban-Ansicht hat noch keine Spalten."
+  },
+  "editHtmlButton": {
+    "message": "HTML-Quelltext bearbeiten"
+  },
+  "previewHtmlButton": {
+    "message": "Zurück zur Vorschau"
   }
 }

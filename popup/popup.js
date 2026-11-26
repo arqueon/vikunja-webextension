@@ -870,9 +870,12 @@
         dueRow.appendChild(dueInput);
         editor.appendChild(dueRow);
 
-        // Rendered preview of an HTML description, above the raw editor.
+        // Rendered preview of an HTML description. The raw markup stays
+        // tucked away behind an "Edit HTML code" toggle — the user asked for
+        // the readable body, not a code box on every expanded task.
         const rawDescription = String(task.description || '');
-        if (/<[a-z][\s\S]*>/i.test(rawDescription)) {
+        const hasHtmlDescription = /<[a-z][\s\S]*>/i.test(rawDescription);
+        if (hasHtmlDescription) {
           const safeNodes = renderSafeDescription(rawDescription);
           if (safeNodes && typeof safeNodes.childNodes === 'object') {
             const previewWrap = document.createElement('div');
@@ -882,20 +885,58 @@
             previewLabel.textContent = t('descPreviewLabel', 'Preview');
             const preview = document.createElement('div');
             preview.className = 'task-desc-render';
-            const nodes = Array.from(safeNodes.childNodes || []);
-            nodes.forEach((node) => preview.appendChild(node));
+            Array.from(safeNodes.childNodes || []).forEach((node) => preview.appendChild(node));
             previewWrap.appendChild(previewLabel);
             previewWrap.appendChild(preview);
             editor.appendChild(previewWrap);
           }
         }
 
-        // Description textarea
+        // Description editor: hidden by default for HTML bodies (the preview
+        // above carries the content); the toggle below reveals it.
         const descInput = document.createElement('textarea');
         descInput.rows = 3;
         descInput.placeholder = t('editDescriptionPlaceholder', 'Description (optional)');
-        descInput.value = task.description || '';
-        editor.appendChild(descInput);
+        descInput.value = rawDescription;
+        const wrapDescInput = document.createElement('div');
+        wrapDescInput.className = 'task-desc-edit-wrap';
+        if (hasHtmlDescription && renderSafeDescription(rawDescription)) {
+          descInput.hidden = true;
+          const htmlToggle = document.createElement('button');
+          htmlToggle.type = 'button';
+          htmlToggle.className = 'btn-ghost-sm';
+          htmlToggle.textContent = t('editHtmlButton', 'Edit HTML code');
+          htmlToggle.addEventListener('click', () => {
+            const editing = !descInput.hidden;
+            if (editing) {
+              // Back to the (re-rendered) preview: the source may have changed.
+              const safeNodes = renderSafeDescription(descInput.value);
+              if (safeNodes && typeof safeNodes.childNodes === 'object') {
+                const previewWrap = wrapDescInput.previousSibling || null;
+                const previewEl = previewWrap && previewWrap.childNodes ? previewWrap.childNodes[previewWrap.childNodes.length - 1] : null;
+                if (previewEl && previewEl.className && previewEl.className.includes('task-desc-render')) {
+                  previewEl.textContent = '';
+                  Array.from(safeNodes.childNodes || []).forEach((node) => previewEl.appendChild(node));
+                }
+              }
+            }
+            descInput.hidden = editing;
+            const labelEl = wrapDescInput.previousSibling && wrapDescInput.previousSibling.className
+              && wrapDescInput.previousSibling.className.includes('task-desc-render-wrap')
+              ? wrapDescInput.previousSibling
+              : null;
+            if (labelEl) labelEl.hidden = !editing;
+            htmlToggle.textContent = editing
+              ? t('editHtmlButton', 'Edit HTML code')
+              : t('previewHtmlButton', 'Back to preview');
+            if (!editing && typeof descInput.focus === 'function') {
+              descInput.focus();
+            }
+          });
+          wrapDescInput.appendChild(htmlToggle);
+        }
+        wrapDescInput.appendChild(descInput);
+        editor.appendChild(wrapDescInput);
 
         // Actions: Save, Open Web, Delete (two-step)
         const actRow = document.createElement('div');
@@ -1021,7 +1062,10 @@
     if (projectViews !== null) return projectViews;
     try {
       const views = await listProjectViews(projectId);
-      const listView = views.find((v) => v.type === 'list') || views[0];
+      // Vikunja calls the view kind `view_kind`; older payloads used `type`.
+      const listView =
+        views.find((v) => String((v && (v.view_kind || v.view_mode || v.type)) || '').toLowerCase() === 'list') ||
+        views[0];
       projectViews = listView ? listView.id : null;
     } catch (e) {
       projectViews = null;
