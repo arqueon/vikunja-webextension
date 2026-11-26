@@ -55,14 +55,18 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
   browser* section (project and automatic labels for captured pages).
 - **Kanban triage board** — a button in the popup header opens a floating
   ~900px panel with the project's tasks as cards. Two groupings, switchable
-  from the header: **Views** uses the project's own kanban view (its buckets
-  become the columns — To-Do / Doing / Done…, exactly as defined in Vikunja)
-  and **Projects** uses projects as columns, so dropping a card moves it to
-  that project. The board opens on the *Inbox* project by default, falls
-  back to project columns when a project has no kanban view, and remembers
-  the grouping. Cards support native drag & drop, ←/→ nudges, a complete
-  checkbox and a link to the web view; every task is shown by default with
-  a pending-only toggle.
+  from the header: **Views** uses the selected board's own kanban view (its
+  buckets become the columns — To-Do / Doing / Done or the GTD pipeline,
+  exactly as defined in Vikunja) and **Projects** shows one column per
+  project that carries tasks, plus Inbox. **Favorited saved filters** (GTD · …)
+  appear in the board selector too — they are boards of their own, with
+  their kanban views and buckets. The board opens on the *Inbox* project by
+  default, respects the project hierarchy (leaf titles, full path in the
+  tooltip, children ordered after their parents), falls back to project
+  columns when a board has no kanban view, and remembers the grouping.
+  Cards support native drag & drop, ←/→ nudges, a complete checkbox and a
+  link to the web view; every task is shown by default with a pending-only
+  toggle.
 - **Sorting** — a sort button in the popup header opens a menu to order the
   task list by Vikunja's manual position, title, created, updated, due date or
   priority, each of which can be reversed (ascending/descending). Newly added

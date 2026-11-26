@@ -98,8 +98,11 @@ const projects = [
   { id: 2, title: 'Casa', is_archived: false },
   { id: 3, title: 'Trabajo' },
   { id: 4, title: 'Autos', parent_project_id: 2 },
+  { id: -5, title: 'GTD · Casa', is_favorite: true },
+  { id: -6, title: 'No favorito', is_favorite: false },
 ];
 const kanbanView = { id: 10, title: 'Tablero', view_kind: 'kanban' };
+const gtdFilterView = { id: 20, title: 'GTD', view_kind: 'kanban' };
 const buckets = [
   { id: 101, title: 'To-Do', hex_color: '3a86ff' },
   { id: 102, title: 'Doing', hex_color: 'fd8a09' },
@@ -110,6 +113,8 @@ const tasksFixture = [
   { id: 702, title: 'Podar rosas', project_id: 1, bucket_id: 102, done: false, priority: 3 },
   { id: 703, title: 'Ya resuelta', project_id: 1, bucket_id: 103, done: true },
   { id: 704, title: 'Sin columna', project_id: 1, done: false },
+  { id: 705, title: 'Ficha del Vocho', project_id: 4, done: false },
+  { id: 706, title: 'Turno de guardia', project_id: 3, done: false },
 ];
 const snapshot = () => JSON.parse(JSON.stringify(tasksFixture));
 
@@ -136,8 +141,11 @@ const VikunjaLib = {
   listProjects: () => Promise.resolve(projects),
   listProjectViews: (projectId) => {
     calls.listProjectViews.push(projectId);
-    // Casa (2) deliberately has no kanban view to exercise the fallback.
-    return Promise.resolve(Number(projectId) === 1 ? [kanbanView] : []);
+    // Casa (2) deliberately has no kanban view to exercise the fallback;
+    // the favorited saved filter (-5) is a board of its own.
+    if (Number(projectId) === 1) return Promise.resolve([kanbanView]);
+    if (Number(projectId) === -5) return Promise.resolve([gtdFilterView]);
+    return Promise.resolve([]);
   },
   listBuckets: (projectId, viewId) => {
     calls.listBuckets.push({ projectId, viewId });
@@ -212,6 +220,9 @@ const cardsOf = (i) => {
 
   // --- Defaults: Inbox project, views grouping with the project's buckets ---
   assert(ids['project-select'].value === '1', 'board opens on Inbox, got ' + ids['project-select'].value);
+  const selectTexts = ids['project-select'].childNodes.map((o) => o.textContent);
+  assert(selectTexts.includes('⚑ GTD · Casa'), 'favorited saved filters offered as boards, got ' + JSON.stringify(selectTexts));
+  assert(!selectTexts.some((txt) => txt.includes('No favorito')), 'non-favorited filters left out');
   assert(ids['group-views'].classList.contains('active'), 'views grouping active by default');
   assert(ids['view-control'].hidden === true, 'view selector hidden with a single kanban view');
   const viewsFetch = calls.listTasks[calls.listTasks.length - 1];
@@ -274,24 +285,38 @@ const cardsOf = (i) => {
   assert(!visibleIds.includes('703'), 'completed task 703 hidden with pending-only, got ' + JSON.stringify(visibleIds));
   ids['pending-toggle'].listeners['click'][0]();
 
-  // --- Projects grouping: columns are projects, Inbox first ---
+  // --- Projects grouping: only projects with tasks, Inbox first, leaf titles ---
   ids['group-projects'].listeners['click'][0]();
   await wait();
   const projectsFetch = calls.listTasks[calls.listTasks.length - 1];
   assert(!projectsFetch.projectId && !projectsFetch.viewId, 'projects mode fetches the global list, got ' + JSON.stringify(projectsFetch));
-  assert(ids['board'].childNodes.length === 4, 'one column per project, got ' + ids['board'].childNodes.length);
+  assert(ids['board'].childNodes.length === 3, 'Inbox + projects with tasks only, got ' + ids['board'].childNodes.length);
   assert(colTitle(0) === 'Inbox', 'Inbox column first, got ' + colTitle(0));
-  assert(colTitle(1) === 'Casa' && colTitle(2) === 'Casa › Autos', 'hierarchical path shown for nested projects, got ' + colTitle(1) + ' / ' + colTitle(2));
+  assert(colTitle(1) === 'Autos' && colTitle(2) === 'Trabajo', 'leaf titles in hierarchy order, got ' + colTitle(1) + ' / ' + colTitle(2));
+  const autosTitleEl = ids['board'].childNodes[1].childNodes[0].childNodes.find((n) => String(n.className).includes('kcol-title'));
+  assert(autosTitleEl && autosTitleEl.title === 'Casa › Autos', 'full path kept as the column tooltip, got ' + JSON.stringify(autosTitleEl && autosTitleEl.title));
+  assert(!columnTitles().some((h) => h.childNodes.some((n) => n.textContent === 'Casa')), 'empty parent project has no column');
   assert(storage.get('kanbanGroupMode') === 'projects', 'grouping choice persisted');
 
   // Drop a card from Inbox onto Trabajo -> project move
   const inboxCard = cardsOf(0)[0];
   inboxCard.listeners['dragstart'][0]();
-  const trabajoCol = ids['board'].childNodes[3];
+  const trabajoCol = ids['board'].childNodes[2];
   await trabajoCol.listeners['drop'][0]({ preventDefault() {} });
   await flush();
   const projectMove = calls.updateTask[calls.updateTask.length - 1];
   assert(projectMove.patch.project_id === 3, 'projects-mode drop PATCHes project_id, got ' + JSON.stringify(projectMove.patch));
+
+  // --- Saved filters (GTD · …) are boards of their own ---
+  ids['group-views'].listeners['click'][0]();
+  await wait();
+  ids['project-select'].listeners['change'][0]({ target: { value: '-5' } });
+  await wait();
+  assert(ids['group-views'].classList.contains('active'), 'favorited filter keeps the views grouping');
+  const filterFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(filterFetch.projectId === -5 && filterFetch.viewId === 20, 'filter board fetches its kanban view tasks, got ' + JSON.stringify(filterFetch));
+  assert(colTitle(0) === 'To-Do', 'filter kanban buckets as columns, got ' + colTitle(0));
+  assert(calls.listBuckets.some((c) => Number(c.projectId) === -5), 'buckets fetched for the saved filter');
 
   // --- A project without kanban view falls back to project columns ---
   ids['group-views'].listeners['click'][0]();

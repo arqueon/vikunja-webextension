@@ -78,11 +78,16 @@
   }
 
   // Q3: the board opens on the Inbox project, wherever it lives.
-  function initialProjectId(prefs) {
+  function inboxProjectId() {
     const inbox = realProjects().find(
       (p) => (p.title || '').trim().toLowerCase() === 'inbox',
     );
-    if (inbox) return inbox.id;
+    return inbox ? inbox.id : null;
+  }
+
+  function initialProjectId(prefs) {
+    const inbox = inboxProjectId();
+    if (inbox) return inbox;
     if (prefs && prefs.defaultProjectId) return Number(prefs.defaultProjectId);
     const first = realProjects()[0];
     return first ? first.id : null;
@@ -100,13 +105,13 @@
     const opts = uiProjectOptions ? uiProjectOptions(projects) : null;
     if (opts) {
       // Hierarchy-aware: children indent under their parents like the
-      // popup's project selects, and the full path disambiguates equal
-      // leaf titles (ANYTYPE › Our Space › Autos).
+      // popup's project selects. Saved filters (GTD · …) join at the end:
+      // they are boards of their own, with kanban views and buckets.
       for (const p of opts) {
         const option = document.createElement('option');
         option.value = String(p.id);
         const indent = p.depth > 0 ? '\u00A0\u00A0'.repeat(p.depth) + '└ ' : '';
-        option.textContent = indent + p.title + (p.depth > 0 ? ` (${p.path})` : '');
+        option.textContent = indent + p.title;
         projectSelect.appendChild(option);
       }
     } else {
@@ -116,6 +121,12 @@
         option.textContent = p.title || 'Untitled';
         projectSelect.appendChild(option);
       }
+    }
+    for (const f of projects.filter((p) => p && Number(p.id) < -1 && p.is_favorite)) {
+      const option = document.createElement('option');
+      option.value = String(f.id);
+      option.textContent = `⚑ ${f.title || 'Filter'}`;
+      projectSelect.appendChild(option);
     }
     projectSelect.value = String(selectedId);
   }
@@ -232,10 +243,10 @@
     return columns;
   }
 
-  // Projects mode: one column per project (Inbox first, then grouped by
-  // their hierarchical path), move = reassign the task's project. The
-  // column title carries the full path so equal leaf names (Autos under
-  // different parents) stay distinguishable.
+  // Projects mode: columns are the projects that actually carry tasks,
+  // plus Inbox (always first, the triage entry point). Leaf titles only —
+  // the hierarchy shows in the order (and in the column tooltip); equal
+  // leaf names under different parents get the parent in parentheses.
   function columnsForProjects() {
     const byProject = new Map();
     for (const task of visibleTasks()) {
@@ -243,29 +254,48 @@
       if (!byProject.has(key)) byProject.set(key, []);
       byProject.get(key).push(task);
     }
+    const inboxId = inboxProjectId();
     let ordered;
     if (uiProjectOptions) {
-      ordered = uiProjectOptions(projects).slice().sort((a, b) => {
-        const ai = a.title.trim().toLowerCase() === 'inbox' ? 0 : 1;
-        const bi = b.title.trim().toLowerCase() === 'inbox' ? 0 : 1;
-        if (ai !== bi) return ai - bi;
-        return String(a.path).localeCompare(String(b.path));
-      });
+      ordered = uiProjectOptions(projects)
+        .filter((p) => Number(p.id) === Number(inboxId) || byProject.has(Number(p.id)))
+        .sort((a, b) => {
+          const ai = Number(a.id) === Number(inboxId) ? 0 : 1;
+          const bi = Number(b.id) === Number(inboxId) ? 0 : 1;
+          if (ai !== bi) return ai - bi;
+          return String(a.path).localeCompare(String(b.path));
+        });
     } else {
-      ordered = realProjects().slice().sort((a, b) => {
-        const ai = (a.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
-        const bi = (b.title || '').trim().toLowerCase() === 'inbox' ? 0 : 1;
-        return ai - bi;
-      });
+      ordered = realProjects()
+        .filter((p) => Number(p.id) === Number(inboxId) || byProject.has(Number(p.id)))
+        .slice()
+        .sort((a, b) => {
+          const ai = Number(a.id) === Number(inboxId) ? 0 : 1;
+          const bi = Number(b.id) === Number(inboxId) ? 0 : 1;
+          if (ai !== bi) return ai - bi;
+          return String(a.title).localeCompare(String(b.title));
+        });
     }
-    return ordered.map((p) => ({
-      key: `p-${p.id}`,
-      id: p.id,
-      kind: 'project',
-      title: ordered.length && p.path && p.depth > 0 ? p.path : (p.title || 'Untitled'),
-      hexColor: '',
-      tasks: byProject.get(Number(p.id)) || [],
-    }));
+    const leaves = ordered.map((p) => String(p.title || '').trim().toLowerCase());
+    return ordered.map((p) => {
+      const leaf = String(p.title || 'Untitled');
+      const duplicated = leaves.filter((l) => l === String(p.title || '').trim().toLowerCase()).length > 1;
+      let title = leaf;
+      if (duplicated && p.depth > 0) {
+        const parts = String(p.path).split('›');
+        const parent = parts.length > 1 ? parts[parts.length - 2].trim() : '';
+        if (parent) title = `${leaf} (${parent})`;
+      }
+      return {
+        key: `p-${p.id}`,
+        id: p.id,
+        kind: 'project',
+        title,
+        path: p.path || leaf,
+        hexColor: '',
+        tasks: byProject.get(Number(p.id)) || [],
+      };
+    });
   }
 
   // --- Rendering ---
@@ -305,7 +335,7 @@
     const title = document.createElement('span');
     title.className = 'kcol-title';
     title.textContent = col.title;
-    title.title = col.title;
+    title.title = col.path || col.title;
     head.appendChild(title);
     const count = document.createElement('span');
     count.className = 'kcol-count';
