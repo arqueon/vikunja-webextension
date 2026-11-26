@@ -580,5 +580,11 @@
   },
   "quickDirectSaveTitle": {
     "message": "Сохранить сразу с настройками захвата (проект и метки)"
+  },
+  "presetInbox": {
+    "message": "Inbox"
+  },
+  "presetInboxTitle": {
+    "message": "Показать задачи из проекта Inbox"
   }
 }

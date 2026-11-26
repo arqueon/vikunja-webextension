@@ -580,5 +580,11 @@
   },
   "quickDirectSaveTitle": {
     "message": "Sofort mit den Erfassungs-Standardeinstellungen (Projekt und Labels) speichern"
+  },
+  "presetInbox": {
+    "message": "Inbox"
+  },
+  "presetInboxTitle": {
+    "message": "Aufgaben aus deinem Inbox-Projekt anzeigen"
   }
 }

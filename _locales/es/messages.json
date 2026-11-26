@@ -580,5 +580,11 @@
   },
   "quickDirectSaveTitle": {
     "message": "Guardar de inmediato con los valores de captura (proyecto y etiquetas)"
+  },
+  "presetInbox": {
+    "message": "Inbox"
+  },
+  "presetInboxTitle": {
+    "message": "Mostrar tareas de tu proyecto Inbox"
   }
 }

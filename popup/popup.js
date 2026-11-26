@@ -100,6 +100,8 @@
   const captureDirectAdd = document.getElementById('capture-direct-add');
   const captureError = document.getElementById('capture-error');
   const toggleCompletedBtn = document.getElementById('toggle-completed');
+  const inboxChip = document.getElementById('preset-inbox');
+  const inboxLabel = document.getElementById('preset-inbox-label');
 
   const isMac = /Mac|iP(hone|ad|od)/.test(navigator.platform || '');
   searchInput.placeholder = `${t('searchPlaceholder', 'Search tasks…')} (${isMac ? '⌘F' : 'Ctrl+F'})`;
@@ -123,6 +125,7 @@
   let currentSort = { mode: 'created', orderBy: 'desc' };
   let projectViews = null;
   let lastCapturedTabInfo = null;
+  let inboxProjectId = null;
 
   const SORT_MODES = {
     position: { label: t('sortManually', 'Manually sorted'), sortBy: 'position', orderBy: 'asc', needsView: true },
@@ -233,7 +236,7 @@
     if (typeof loadDraft !== 'function') return null;
     const draft = await loadDraft().catch(() => null);
     if (!draft) return null;
-    if (draft.preset && ['all', 'due', 'favorites'].includes(draft.preset)) {
+    if (draft.preset && ['all', 'due', 'favorites', 'inbox'].includes(draft.preset)) {
       activePreset = draft.preset;
       document.querySelectorAll('.preset-chip').forEach((c) => {
         c.classList.toggle('active', c.getAttribute('data-preset') === activePreset);
@@ -611,7 +614,11 @@
   function filterTasksByPreset(taskList) {
     const now = Date.now();
     return taskList.filter((task) => {
-      if (activePreset === 'due') {
+      if (activePreset === 'inbox') {
+        // The fetch is already scoped to the Inbox project; this guard also
+        // covers lists loaded without the scope (e.g. a restored preset).
+        return inboxProjectId !== null && Number(task.project_id) === Number(inboxProjectId);
+      } else if (activePreset === 'due') {
         if (!hasDueDate(task.due_date)) return false;
         const dueTime = new Date(task.due_date).getTime();
         const isOverdue = dueTime < now;
@@ -933,7 +940,9 @@
       opts.filter = showCompletedTasks
         ? (prefs.customFilter || '')
         : (prefs.customFilter || 'done = false');
-      if (prefs.defaultProjectId) {
+      if (activePreset === 'inbox' && inboxProjectId) {
+        opts.projectId = inboxProjectId;
+      } else if (prefs.defaultProjectId) {
         opts.projectId = prefs.defaultProjectId;
       }
     }
@@ -1085,6 +1094,22 @@
     }
   }
 
+  // The Inbox chip appears only when a real project named "Inbox" exists and
+  // scopes the whole list to it. The label mirrors the project's own title,
+  // so a renamed inbox stays readable.
+  function resolveInboxProject() {
+    const project = realProjectList().find(
+      (p) => (p.title || '').trim().toLowerCase() === 'inbox',
+    );
+    inboxProjectId = project ? project.id : null;
+    if (inboxChip) {
+      inboxChip.hidden = !project;
+      if (project && inboxLabel) {
+        inboxLabel.textContent = project.title;
+      }
+    }
+  }
+
   async function load() {
     const config = await getConfig();
     baseUrl = config.baseUrl;
@@ -1112,6 +1137,7 @@
       }
       quickAddMode = mode;
       projectsById = new Map(projects.map((pr) => [pr.id, pr]));
+      resolveInboxProject();
       const { lastViewId } = await api.storage.local.get({ lastViewId: null });
       if (lastViewId && projectsById.has(Number(lastViewId)) && Number(lastViewId) < -1) {
         currentViewId = Number(lastViewId);
@@ -1122,16 +1148,20 @@
       await resolveSort();
       sortBtn.title = sortLabel();
       sortBtn.setAttribute('aria-label', sortLabel());
-      tasks = await loadTasks();
       if (typeof getRecentLabels === 'function') {
         recentLabels = await getRecentLabels().catch(() => []);
       }
-      // Restore whatever the user had typed before the popup lost focus,
-      // then honor a capture requested from the context menu / shortcut.
+      // Restore whatever the user had typed before the popup lost focus —
+      // including the active preset, so the first fetch is scoped correctly.
       const draft = await restoreDraft();
-      if (draft && typeof draft.showCompleted === 'boolean' && draft.showCompleted !== showCompletedTasks) {
-        tasks = await loadTasks();
+      if (activePreset === 'inbox' && !inboxProjectId) {
+        // The remembered Inbox project is gone; fall back to All.
+        activePreset = 'all';
+        document.querySelectorAll('.preset-chip').forEach((c) => {
+          c.classList.toggle('active', c.getAttribute('data-preset') === 'all');
+        });
       }
+      tasks = await loadTasks();
       renderTasks();
       renderChips();
       autosize();
@@ -1697,14 +1727,24 @@
     });
   });
 
-  // Preset filter bar (All / Today+Overdue / Favorites)
+  // Preset filter bar (All / Inbox / Today+Overdue / Favorites)
   document.querySelectorAll('.preset-chip').forEach((btn) => {
     btn.addEventListener('click', () => {
+      const next = btn.getAttribute('data-preset') || 'all';
+      // The Inbox preset scopes the server fetch itself, so entering or
+      // leaving it needs a reload; the other presets filter locally.
+      const needsReload = next === 'inbox' || activePreset === 'inbox';
       document.querySelectorAll('.preset-chip').forEach((c) => c.classList.remove('active'));
       btn.classList.add('active');
-      activePreset = btn.getAttribute('data-preset') || 'all';
+      activePreset = next;
       saveDraftNow();
-      renderTasks();
+      if (needsReload) {
+        refreshTasks().catch((err) => {
+          uiShowToast(toastEl, t('reloadFailed', 'Reload failed: $1', [err.message]), { error: true });
+        });
+      } else {
+        renderTasks();
+      }
     });
   });
 

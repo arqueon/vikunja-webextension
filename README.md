@@ -12,7 +12,11 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 - **Capture defaults for pipelines**: A dedicated options section sets the project and the automatic labels for pages captured from the browser (toolbar button, context menu, `Alt+Shift+V`). Labels are created on demand, and the labels you use most surface first in the capture form.
 - **Visible, editable link field**: Captured URLs now show in their own field instead of being buried in the description; the markdown link Vikunja expects is rebuilt at submit time.
 - **Hierarchical Project Tree**: Visual indenting and hierarchy support for nested projects.
-- **Quick Preset Filters**: Direct toolbar filter chips for *All*, *Due Today*, *Starred/Favorites*, and a toggle for completed tasks.
+- **Quick Preset Filters**: Direct toolbar filter chips for *All*, *Inbox*,
+  *Due Today*, *Starred/Favorites*, and a toggle for completed tasks. The
+  Inbox chip appears automatically when a project named "Inbox" exists (its
+  label mirrors the project's own title) and scopes the whole list to that
+  project, so it slots straight into an Inbox-first pipeline.
 - **Inline Task Card Editor**: Click the card edit icon to expand a rich inline editor with title, description, priority, dates, and safe 3-second countdown deletion.
 - **Official Vikunja Theme**: Full support for Vikunja's official dark and light palettes with accent (`#196aff`) and appearance switcher (Auto / Dark / Light).
 - **AMO-Ready Packaging**: Clean Manifest V3 compliant package (`vikunja-companion@arqueonautis.org`) with zero linter errors.

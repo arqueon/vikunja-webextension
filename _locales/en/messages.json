@@ -580,5 +580,11 @@
   },
   "quickDirectSaveTitle": {
     "message": "Save right away with the capture defaults (project and labels)"
+  },
+  "presetInbox": {
+    "message": "Inbox"
+  },
+  "presetInboxTitle": {
+    "message": "Show tasks from your Inbox project"
   }
 }

@@ -331,6 +331,7 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
 
   const firstTask = ids['task-list'].childNodes[0];
   assert(firstTask.className.includes('task'), 'first row is task');
+  assert(ids['preset-inbox'].hidden === true, 'inbox chip hidden without an Inbox project');
   const checkboxInput = firstTask.childNodes[0].childNodes[0];
   assert(checkboxInput.checked === false, 'first checkbox unchecked');
   const doneRow = ids['task-list'].childNodes[1];
@@ -834,6 +835,27 @@ const assert = (cond, msg) => { if (!cond) errors.push(msg); };
   keyEv = dispatchKey({ ctrlKey: true, key: 'f' });
   assert(keyEv.prevented === true && global._lastFocus === 'search', 'Firefox Ctrl+F still focuses search, got ' + global._lastFocus);
   isFirefoxMock = false;
+
+  // --- Inbox preset chip: scopes the list to the Inbox project ---
+  storage.delete('vikunjaDraft');
+  VikunjaLib.listProjects = () => Promise.resolve(projects.concat([{ id: 5, title: 'Inbox' }]));
+  storage.set('vikunjaDraft', { quickTitle: '', preset: 'inbox', showCompleted: false, capture: null });
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['preset-inbox'].hidden === false, 'inbox chip visible with an Inbox project');
+  assert(ids['preset-inbox-label'].textContent === 'Inbox', 'inbox chip mirrors the project title, got ' + JSON.stringify(ids['preset-inbox-label'].textContent));
+  const inboxFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(inboxFetch.projectId === 5, 'restored inbox preset scopes the fetch to the Inbox project, got ' + JSON.stringify(inboxFetch.projectId));
+
+  // A remembered inbox whose project disappeared falls back to All.
+  storage.set('vikunjaDraft', { quickTitle: '', preset: 'inbox', showCompleted: false, capture: null });
+  VikunjaLib.listProjects = () => Promise.resolve(projects);
+  eval(src);
+  await new Promise((r) => { setTimeout(r, 20); });
+  assert(ids['preset-inbox'].hidden === true, 'inbox chip hidden again without an Inbox project');
+  const fallbackFetch = calls.listTasks[calls.listTasks.length - 1];
+  assert(fallbackFetch.projectId === 9 && fallbackFetch.projectId !== 5, 'missing Inbox falls back to the default project scope, got ' + JSON.stringify(fallbackFetch.projectId));
+  storage.delete('vikunjaDraft');
 
   if (errors.length) {
     console.log('FAIL');
