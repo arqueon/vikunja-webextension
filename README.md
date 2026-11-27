@@ -140,7 +140,7 @@ node smoketests/vikunja_kanban_test.js     # kanban board: groupings, moves, fal
 node smoketests/vikunja_extra_test.js      # options window
 node smoketests/vikunja_element_test.js    # background: Element instances, content-script hooks
 node smoketests/vikunja_content_test.js    # Element page: injected buttons + toasts
-node smoketests/quickadd_harness.js        # 879 Quick Add Magic parity assertions
+node smoketests/quickadd_harness.js        # 933 Quick Add Magic parity assertions
 ```
 
 Each suite prints a summary and exits non-zero on any failure, so the tests can
@@ -196,9 +196,17 @@ The Chrome pack stages only the shipped files and drops Firefox-only `background
 
 ## Publishing to Firefox Add-ons (AMO)
 
-1. Log into the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/submit/distribution).
-2. Choose **"On this site"** (listed on AMO).
-3. Upload `dist/vikunja-companion-1.2.0.zip` (or `.xpi`).
-4. Select category: **Productivity**.
-5. The extension does not collect any user data (`data_collection_permissions: { required: ["none"] }`).
-6. Submit for review!
+1. Run `npm run lint:amo` (must report 0 errors and 0 warnings) and `npm run pack:firefox`.
+2. Open the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/vikunja-companion/edit) (choose **"On this site"** for listed distribution).
+3. Upload `dist/vikunja-companion-<version>.zip` (or `.xpi`).
+4. Use the store assets in [`store/`](store/) (`icon-amo-256.png`, `screenshots/*.png`) and HTML-only listing copy in [`store/LISTING.md`](store/LISTING.md) (AMO does not render Markdown).
+5. Select categories (**Bookmarks**, **Alerts & Updates**, **Tabs**) and configure the privacy policy from [`PRIVACY.md`](PRIVACY.md) (`data_collection_permissions: { required: ["none"] }`).
+6. Submit for review.
+
+## Publishing to Chrome Web Store
+
+1. Run `npm run pack:chrome` to build `dist/vikunja-chrome-<version>.zip`.
+2. Open the [Chrome Web Store Developer Console](https://chrome.google.com/webstore/devconsole).
+3. Upload `dist/vikunja-chrome-<version>.zip`.
+4. Fill **Store Listing** and **Privacy Practices** using [`store/LISTING.md`](store/LISTING.md), `store/icon-cws-128.png`, `store/promo-cws-440x280.png`, `store/screenshots/*.png`, and [`PRIVACY.md`](PRIVACY.md).
+5. Submit for review.
