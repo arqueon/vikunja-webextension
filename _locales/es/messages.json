@@ -218,8 +218,11 @@
   "hintOptionalScopes": {
     "message": "Las funciones opcionales de abajo necesitan algunos permisos más:"
   },
+  "scopeKanban": {
+    "message": "<strong>Tablero Kanban y orden manual</strong>: <code>projects_views</code> read_all, <code>projects_views_tasks</code> read_all, <code>projects</code> views_buckets, views_buckets_tasks y views_buckets_tasks_get"
+  },
   "scopeQuickAddMagic": {
-    "message": "<strong>Quick Add Magic</strong> en el popup (<code>*label</code>, <code>+project</code>, <code>!priority</code>, <code>@assignee</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create, <code>projects_users</code> read_all"
+    "message": "<strong>Quick Add Magic</strong> en el popup (<code>*label</code>, <code>+project</code>, <code>!priority</code>, <code>@assignee</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create &amp; update_bulk, <code>tasks_assignees</code> create, <code>projects_users</code> read_all"
   },
   "scopeElementTag": {
     "message": "<strong>Etiqueta de asignación automática en Element</strong> (abajo): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create"

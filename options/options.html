@@ -34,13 +34,14 @@
     <p class="hint" data-i18n="hintToken">Create an API token in Vikunja under Settings → API Tokens. Give the token at least these permissions:</p>
     <ul class="permissions">
       <li><code>projects</code> &mdash; read_all</li>
-      <li><code>tasks</code> &mdash; read_all, create, update</li>
+      <li><code>tasks</code> &mdash; read_all, create, update, delete</li>
       <li><code>filters</code> &mdash; read_all</li>
       <li><code>other</code> &mdash; user</li>
     </ul>
     <p class="hint" data-i18n="hintOptionalScopes">The optional features below need a few more scopes:</p>
     <ul class="permissions">
-      <li data-i18n-html="scopeQuickAddMagic"><strong>Quick Add Magic</strong> in the popup (<code>*label</code>, <code>+project</code>, <code>!priority</code>, <code>@assignee</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create, <code>projects_users</code> read_all</li>
+      <li data-i18n-html="scopeKanban"><strong>Kanban board &amp; manual sort</strong>: <code>projects_views</code> read_all, <code>projects_views_tasks</code> read_all, <code>projects</code> views_buckets, views_buckets_tasks &amp; views_buckets_tasks_get</li>
+      <li data-i18n-html="scopeQuickAddMagic"><strong>Quick Add Magic</strong> in the popup (<code>*label</code>, <code>+project</code>, <code>!priority</code>, <code>@assignee</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create &amp; update_bulk, <code>tasks_assignees</code> create, <code>projects_users</code> read_all</li>
       <li data-i18n-html="scopeElementTag"><strong>Element auto-assign tag</strong> (below): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create</li>
     </ul>
 

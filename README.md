@@ -11,7 +11,7 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
 - **Persistent drafts**: Anything typed into the quick-add or the capture form is mirrored to session storage on every keystroke and restored when the popup reopens, so losing the popup's focus never loses your text. A successful submit (or an explicit cancel) clears the draft.
 - **Capture defaults for pipelines**: A dedicated options section sets the project and the automatic labels for pages captured from the browser (toolbar button, context menu, `Alt+Shift+V`). Labels are created on demand, and the labels you use most surface first in the capture form.
 - **Visible, editable link field**: Captured URLs now show in their own field instead of being buried in the description; the markdown link Vikunja expects is rebuilt at submit time.
-- **Hierarchical Project Tree**: Visual indenting and hierarchy support for nested projects.
+- **Hierarchical Project Tree & Scope Filter**: Visual indenting and pre-order hierarchy support for nested projects, plus a compact project/subproject filter dropdown in the popup header that automatically includes subprojects when selecting a parent project.
 - **Quick Preset Filters**: Direct toolbar filter chips for *All*, *Inbox*,
   *Due Today*, *Starred/Favorites*, and a toggle for completed tasks. The
   Inbox chip appears automatically when a project named "Inbox" exists (its
@@ -54,19 +54,17 @@ Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full t
   remember your last sort choice, plus a dedicated *Captures from the
   browser* section (project and automatic labels for captured pages).
 - **Kanban triage board** — a button in the popup header opens a floating
-  ~900px panel with the project's tasks as cards. Two groupings, switchable
-  from the header: **Views** uses the selected board's own kanban view (its
-  buckets become the columns — To-Do / Doing / Done or the GTD pipeline,
-  exactly as defined in Vikunja) and **Projects** shows one column per
-  project that carries tasks, plus Inbox. **Favorited saved filters** (GTD · …)
-  appear in the board selector too — they are boards of their own, with
-  their kanban views and buckets. The board opens on the *Inbox* project by
-  default, respects the project hierarchy (leaf titles, full path in the
-  tooltip, children ordered after their parents), falls back to project
-  columns when a board has no kanban view, and remembers the grouping.
-  Cards support native drag & drop, ←/→ nudges, a complete checkbox and a
-  link to the web view; every task is shown by default with a pending-only
-  toggle.
+  ~900px panel with your tasks as cards. Three modes, switchable from the
+  header: **Views** loads your favorited saved filters with their real Vikunja
+  kanban view and columns (supporting both manual drag-and-drop views and
+  read-only filter-based views, plus task identifier badges); **Projects**
+  displays your nested project tree in true parent → child order with each
+  project's own kanban view; and **Move to project** shows cross-project
+  columns (Inbox + projects carrying tasks) so dragging a card moves it to
+  that project. Powered by Vikunja API v2 (`buckets/tasks` and view-scoped
+  `PUT .../buckets/{bucket}/tasks`), opening on *Inbox* by default and
+  supporting native drag & drop, ←/→ nudges, a complete checkbox, a link to
+  the web view, and a pending-only toggle.
 - **Sorting** — a sort button in the popup header opens a menu to order the
   task list by Vikunja's manual position, title, created, updated, due date or
   priority, each of which can be reversed (ascending/descending). Newly added

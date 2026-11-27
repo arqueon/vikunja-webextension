@@ -218,8 +218,11 @@
   "hintOptionalScopes": {
     "message": "Дополнительным функциям ниже нужны ещё несколько разрешений:"
   },
+  "scopeKanban": {
+    "message": "<strong>Канбан-доска и ручная сортировка</strong>: <code>projects_views</code> read_all, <code>projects_views_tasks</code> read_all, <code>projects</code> views_buckets, views_buckets_tasks и views_buckets_tasks_get"
+  },
   "scopeQuickAddMagic": {
-    "message": "<strong>Quick Add Magic</strong> в попапе (<code>*метка</code>, <code>+проект</code>, <code>!приоритет</code>, <code>@исполнитель</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create, <code>projects_users</code> read_all"
+    "message": "<strong>Quick Add Magic</strong> в попапе (<code>*метка</code>, <code>+проект</code>, <code>!приоритет</code>, <code>@исполнитель</code>): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create &amp; update_bulk, <code>tasks_assignees</code> create, <code>projects_users</code> read_all"
   },
   "scopeElementTag": {
     "message": "<strong>Автоматическая метка для Element</strong> (ниже): <code>labels</code> read_all &amp; create, <code>tasks_labels</code> create"
