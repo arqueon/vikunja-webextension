@@ -199,7 +199,7 @@ The Chrome pack stages only the shipped files and drops Firefox-only `background
 1. Run `npm run lint:amo` (must report 0 errors and 0 warnings) and `npm run pack:firefox`.
 2. Open the [Mozilla Add-on Developer Hub](https://addons.mozilla.org/developers/addon/vikunja-companion/edit) (choose **"On this site"** for listed distribution).
 3. Upload `dist/vikunja-companion-<version>.zip` (or `.xpi`).
-4. Use the store assets in [`store/`](store/) (`icon-amo-256.png`, `screenshots/*.png`) and HTML-only listing copy in [`store/LISTING.md`](store/LISTING.md) (AMO does not render Markdown).
+4. Use the store assets in [`store/`](store/) (`icon-amo-256.png`, `screenshots/*.png`) and AMO subset Markdown listing copy in [`store/LISTING.md`](store/LISTING.md) (avoid 4-space indents and `###` headings).
 5. Select categories (**Bookmarks**, **Alerts & Updates**, **Tabs**) and configure the privacy policy from [`PRIVACY.md`](PRIVACY.md) (`data_collection_permissions: { required: ["none"] }`).
 6. Submit for review.
 

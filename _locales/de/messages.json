@@ -3,7 +3,7 @@
     "message": "de"
   },
   "extDescription": {
-    "message": "Begleiterweiterung für Vikunja: URL-Erfassung mit Standardwerten, persistente Entwürfe, natives Firefox-Design (Proton), Inline-Aufgabeneditor und offizielle Vikunja-Designs."
+    "message": "Verwalte Vikunja-Aufgaben in der Symbolleiste: 1-Klick-URL-Erfassung, Kanban-Board, Projektfilter, Inline-Editor & Designs."
   },
   "cmdOpenPopup": {
     "message": "Vikunja Companion-Popup öffnen"

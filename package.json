@@ -1,6 +1,6 @@
 {
   "name": "vikunja-companion",
-  "version": "1.2.1",
+  "version": "1.2.2",
   "private": true,
   "description": "Companion extension for Vikunja: URL capture with pipeline defaults, persistent drafts, native Firefox (Proton) design, inline task editor, and official Vikunja theme support.",
   "author": "Rubén A. Velázquez <ruben@arqueonautis.org>",

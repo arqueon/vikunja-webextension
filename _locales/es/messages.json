@@ -3,7 +3,7 @@
     "message": "es"
   },
   "extDescription": {
-    "message": "Extensión compañera de Vikunja: captura de URLs con valores por defecto, borradores persistentes, diseño nativo de Firefox (Proton), editor de tareas en línea y temas oficiales de Vikunja."
+    "message": "Gestiona tareas de Vikunja desde el navegador: captura de URL en 1 clic, tablero Kanban, filtros de proyectos, editor y temas."
   },
   "cmdOpenPopup": {
     "message": "Abrir el popup de Vikunja Companion"

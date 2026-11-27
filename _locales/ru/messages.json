@@ -3,7 +3,7 @@
     "message": "ru"
   },
   "extDescription": {
-    "message": "Расширение-компаньон для Vikunja: захват URL с настройками по умолчанию, сохранение черновиков, нативный дизайн Firefox (Proton), встроенный редактор задач и официальные темы Vikunja."
+    "message": "Управление задачами Vikunja из панели браузера: захват URL в 1 клик, доска Kanban, фильтры проектов, редактор и темы."
   },
   "cmdOpenPopup": {
     "message": "Открыть попап Vikunja Companion"

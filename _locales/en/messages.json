@@ -3,7 +3,7 @@
     "message": "en"
   },
   "extDescription": {
-    "message": "Companion extension for Vikunja: URL capture with pipeline defaults, persistent drafts, native Firefox (Proton) design, inline task editor, and official Vikunja theme support."
+    "message": "Manage Vikunja tasks from your toolbar: 1-click URL capture, Kanban board, project filters, inline editing, and themes."
   },
   "cmdOpenPopup": {
     "message": "Open the Vikunja Companion popup"
