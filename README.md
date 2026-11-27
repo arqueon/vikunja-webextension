@@ -2,7 +2,7 @@
 
 Manage [Vikunja](https://vikunja.io) tasks from your browser toolbar with full task management, 1-click URL capture, inline task editing, and official Vikunja dark/light themes.
 
-> **Note:** Vikunja Companion is an independent, enhanced fork of [dasJ/vikunja-webextension](https://github.com/dasJ/vikunja-webextension) by Janne Heß, maintained by [Rubén A. Velázquez (arqueon)](https://github.com/arqueon).
+> **Note:** Vikunja Companion is an independent, enhanced fork of [dasJ/vikunja-webextension](https://github.com/dasJ/vikunja-webextension) by Janne Heß, maintained by [arqueon](https://github.com/arqueon).
 
 ## Companion Enhancements
 
